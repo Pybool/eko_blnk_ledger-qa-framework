@@ -1,0 +1,79 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: blnk-test-postgres
+    restart: on-failure
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: blnk
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7.2.4
+    container_name: blnk-test-redis
+    restart: on-failure
+
+  server:
+    image: jerryenebeli/blnk:0.15.0
+    container_name: blnk-test-server
+    restart: on-failure
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["blnk migrate up && blnk start"]
+    ports:
+      - "5001:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./blnk.json:/blnk.json
+
+  worker:
+    image: jerryenebeli/blnk:0.15.0
+    container_name: blnk-test-worker
+    restart: on-failure
+    entrypoint: ["blnk", "workers"]
+    depends_on:
+      - server
+    volumes:
+      - ./blnk.json:/blnk.json
+
+  swagger:
+    image: swaggerapi/swagger-ui:latest
+    container_name: blnk-test-swagger
+    profiles: ["explore"]
+    ports:
+      - "8080:8080"
+    environment:
+      SWAGGER_JSON: /spec/openapi.json
+      TRY_IT_OUT_ENABLED: "true"
+    volumes:
+      - ./docs/openapi.json:/spec/openapi.json:ro
+
+  # http://localhost:8081
+  #   System: PostgreSQL   Server: postgres   User: postgres
+  #   Password: password   Database: blnk
+  adminer:
+    image: adminer:4
+    container_name: blnk-test-adminer
+    profiles: ["explore"]
+    ports:
+      - "8081:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: dracula
+    depends_on:
+      - postgres
+
+volumes:
+  pg_data:

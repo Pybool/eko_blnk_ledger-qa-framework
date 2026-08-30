@@ -1,0 +1,11 @@
+name: Performance Suite
+
+on:
+  workflow_dispatch:
+
+jobs:
+  performance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "Run k6 against a dedicated performance environment."
