@@ -1,6 +1,6 @@
 # Financial Ledger Quality Engineering Platform
 
-Enterprise-grade SDET portfolio project for validating financial-ledger
+Enterprise-grade SDET project for validating financial-ledger
 correctness through deterministic integration tests, accounting invariants,
 concurrency testing, fault injection, property-based/model-based testing,
 reconciliation, and performance testing.

@@ -1,19 +1,21 @@
 package io.portfolio.ledgerqa.api;
 
-public final class LedgerClient {
-    private final TransactionClient transactions;
-    private final BalanceClient balances;
+import io.restassured.response.Response;
+import io.restassured.specification.RequestSpecification;
 
-    public LedgerClient(TransactionClient transactions, BalanceClient balances) {
-        this.transactions = transactions;
-        this.balances = balances;
+public final class LedgerClient extends BaseClient {
+
+    private static final String LEDGERS = "/ledgers";
+
+    public LedgerClient(RequestSpecification requestSpec) {
+        super(requestSpec);
     }
 
-    public TransactionClient transactions() {
-        return transactions;
+    public Response health() {
+        return get("/");
     }
 
-    public BalanceClient balances() {
-        return balances;
+    public Response getById(String ledgerId) {
+        return get(LEDGERS + "/" + ledgerId);
     }
 }
