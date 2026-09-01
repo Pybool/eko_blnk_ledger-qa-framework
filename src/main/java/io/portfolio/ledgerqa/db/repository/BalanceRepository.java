@@ -24,13 +24,11 @@ public final class BalanceRepository {
 
     private final DatabaseClient database;
 
-    public BalanceRepository(
-            DatabaseClient database) {
+    public BalanceRepository(DatabaseClient database) {
         this.database = database;
     }
 
-    public Optional<BalanceRecord> findById(
-            String balanceId) {
+    public Optional<BalanceRecord> findById(String balanceId) {
 
         return database.queryOne(
                 FIND_BY_ID,

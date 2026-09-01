@@ -32,7 +32,7 @@ public final class TestConfig {
         return System.getenv()
                 .getOrDefault(
                     "DATABASE_PASSWORD",
-                    "postgres"
+                    "password"
                 );
     }
 }

@@ -21,10 +21,7 @@ public final class DatabaseClient {
     }
 
     public Connection connect() throws SQLException {
-        return DriverManager.getConnection(
-                url,
-                username,
-                password);
+        return DriverManager.getConnection(url, username, password);
     }
 
     public boolean isHealthy(int timeoutSeconds) {
@@ -41,8 +38,8 @@ public final class DatabaseClient {
             Object... parameters) {
 
         try (
-                Connection connection = connect();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
+            Connection connection = connect();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
 
             setParameters(statement, parameters);
 
@@ -70,8 +67,8 @@ public final class DatabaseClient {
             Object... parameters) {
 
         try (
-                Connection connection = connect();
-                PreparedStatement statement = connection.prepareStatement(sql)) {
+            Connection connection = connect();
+            PreparedStatement statement = connection.prepareStatement(sql)) {
 
             setParameters(statement, parameters);
 

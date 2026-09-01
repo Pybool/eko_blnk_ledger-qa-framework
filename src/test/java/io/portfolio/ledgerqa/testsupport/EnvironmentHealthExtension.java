@@ -1,12 +1,11 @@
 package io.portfolio.ledgerqa.testsupport;
 
+import io.portfolio.ledgerqa.api.LedgerClient;
 import io.portfolio.ledgerqa.api.ApiClientFactory;
 import io.portfolio.ledgerqa.db.DatabaseClient;
 import io.portfolio.ledgerqa.db.DatabaseClientFactory;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-
-import java.sql.Connection;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,15 +30,12 @@ public final class EnvironmentHealthExtension implements BeforeAllCallback {
                 .isBetween(200, 299);
     }
 
-    private void verifyDatabase() throws Exception {
+    private void verifyDatabase() {
 
         DatabaseClient database = DatabaseClientFactory.create();
 
-        try (Connection connection = database.connect()) {
-
-            assertThat(datanase.isHealthy(DATABASE_TIMEOUT_SECONDS))
-                    .as("PostgreSQL must be responsive before tests run")
-                    .isTrue();
-        }
+        assertThat(database.isHealthy(DATABASE_TIMEOUT_SECONDS))
+                .as("PostgreSQL must be responsive before tests run")
+                .isTrue();
     }
 }

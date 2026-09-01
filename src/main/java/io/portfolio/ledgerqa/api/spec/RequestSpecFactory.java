@@ -19,13 +19,3 @@ public final class RequestSpecFactory {
                 .build();
     }
 }
-// We will add the bellow later on as we start testing
-
-// authentication
-// correlation IDs
-// custom headers
-// REST Assured filters
-// Allure logging
-// timeouts
-// pretty logging
-// API version headers
