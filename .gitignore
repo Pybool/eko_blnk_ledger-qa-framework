@@ -3,6 +3,10 @@ target/
 .vscode/
 *.iml
 .DS_Store
+*.docx
+*.pdf
+
+.allure/
 
 .env
 *.log

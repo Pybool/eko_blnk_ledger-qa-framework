@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record CreateBalanceRequest(
 
-        @JsonProperty("ledger_id") String ledgerId,
+        @JsonProperty("ledger_id") 
+        String ledgerId,
 
-        String currency,
-
-        @JsonProperty("identity_id") String identityId) {
+        String currency) {
 }

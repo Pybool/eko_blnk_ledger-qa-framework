@@ -3,7 +3,7 @@ package io.portfolio.ledgerqa.model.requests;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record CreateTransactionRequest(
-
+        String description,
         String reference,
 
         String source,
@@ -15,6 +15,8 @@ public record CreateTransactionRequest(
         String currency,
 
         int precision,
+
+        @JsonProperty("allow_overdraft") boolean allowOverdraft,
 
         @JsonProperty("skip_queue") boolean skipQueue,
 
