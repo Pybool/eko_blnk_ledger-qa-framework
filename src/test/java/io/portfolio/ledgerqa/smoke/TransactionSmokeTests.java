@@ -153,7 +153,7 @@ class TransactionSmokeTests extends BaseTest {
         CreateTransactionResponse createdTransaction = transactionResponse.as(CreateTransactionResponse.class);
 
         Allure.step(
-                "Verify transaction was created successfully",
+                "Verify transaction was created and funds were tranferred successfully",
                 () -> {
                     assertThat(transactionResponse.statusCode())
                             .isEqualTo(201);

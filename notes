@@ -5,10 +5,4 @@ $env:Path="$env:JAVA_HOME\bin;$env:Path"
 
 For this commit 
 
-1: We added allure framework for more readable reports, test names, steps, attachments, 
-request/response evidence, and later screenshots/logs if needed.
-
-2: We also implemented a testdata namespace for test data for the  database cleaning mechanism, to ensure tests can run in
-parallel and clean up without destroy another active test's data in database and a testlifecycle extension
-
-3: Completed ledger creation, Balance creation and transaction/Transfer smoke tests
+1: 
