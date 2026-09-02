@@ -33,7 +33,7 @@ class LedgerPersistenceTests extends BaseTest {
     @Story("Ledger Persistence")
     @DisplayName("should persist created ledger correctly")
     @Severity(SeverityLevel.CRITICAL)
-    void shouldPersistCreatedLedegerCorrectly() {
+    void shouldPersistCreatedLedgerCorrectly() {
         String ledgerName = TestData.unique("qa-ledger");
         String projectOwner = TestData.unique("Blnk Tech");
 
