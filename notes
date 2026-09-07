@@ -5,4 +5,83 @@ $env:Path="$env:JAVA_HOME\bin;$env:Path"
 
 For this commit 
 
-1: 
+1: Modified CreateLedgerRequest to allow nullable fields
+
+2: Added createRaw method to ledgerclient to allow us attempt to create ledgers with malformed payloads
+
+
+
+
+
+
+Two debits hit the same balance simultaneously.
+Can both observe sufficient funds and both succeed?
+
+50 requests with the same reference arrive concurrently.
+Does exactly one financial effect occur?
+
+An inflight transaction is committed twice concurrently.
+Can funds settle twice?
+
+A DB/network failure occurs after source debit
+but before destination credit.
+Is partial state observable?
+
+Client times out after Blnk actually committed.
+Client retries the identical request.
+Does money move twice?
+
+Commit and void race against each other.
+What final states are possible?
+
+1000 randomly generated transaction sequences execute.
+Does total ledger value remain conserved?
+
+Very large precise_amount values cross numeric boundaries.
+Does API → application → PostgreSQL preserve the exact value?
+
+Multiple transactions contend on the same balance version.
+Can an update be lost?
+
+
+
+✓ 75 deterministic integration scenarios
+✓ accounting invariants
+✓ concurrent debit tests
+✓ duplicate-reference races
+✓ inflight commit/void races
+✓ PostgreSQL state verification
+✓ property-based transaction generation
+✓ model-based testing
+✓ network/database fault injection
+✓ reconciliation
+✓ k6 load testing
+
+
+
+INV-001
+balance = credit_balance - debit_balance
+
+INV-002
+Failed transactions cannot mutate settled balances.
+
+INV-003
+One transaction reference cannot cause multiple financial effects.
+
+INV-004
+Reserved funds cannot be settled twice.
+
+INV-005
+Voiding inflight transactions releases reservations.
+
+INV-006
+Committing inflight transactions moves the effect to settled state exactly once.
+
+INV-008
+Concurrent writes cannot cause lost updates.
+
+INV-010
+Failed operations cannot leave partial financial mutations.
+
+INV-012
+Ledger value obeys conservation rules.

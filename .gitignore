@@ -5,6 +5,7 @@ target/
 .DS_Store
 *.docx
 *.pdf
+notes
 
 .allure/
 

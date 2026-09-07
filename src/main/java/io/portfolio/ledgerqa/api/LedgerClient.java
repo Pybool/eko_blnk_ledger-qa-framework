@@ -20,6 +20,10 @@ public final class LedgerClient extends BaseClient {
         return post(LEDGERS, request);
     }
 
+    public Response createRaw(String rawJson) {
+        return post(LEDGERS, rawJson);
+    }
+
     public Response getById(String ledgerId) {
         return get(LEDGERS + "/" + ledgerId);
     }

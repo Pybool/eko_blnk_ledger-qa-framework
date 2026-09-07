@@ -36,7 +36,7 @@ class LedgerSmokeTests extends BaseTest {
     void createLedger() {
 
         String ledgerName = TestData.unique("qa-ledger");
-        String projectOwner = "Blnk Tech";
+        String projectOwner = "EKO-SDET";
 
         LedgerClient ledgerClient = ApiClientFactory.ledgerClient();
 

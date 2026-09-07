@@ -11,6 +11,8 @@ public record CreateBalanceResponse(
 
         @JsonProperty("credit_balance") long creditBalance,
 
+        @JsonProperty("currency") String currency,
+
         @JsonProperty("inflight_credit_balance") long inflightCreditBalance,
 
         @JsonProperty("debit_balance") long debitBalance,
@@ -22,8 +24,6 @@ public record CreateBalanceResponse(
         @JsonProperty("identity_id") String identityId,
 
         @JsonProperty("balance_id") String balanceId,
-
-        String currency,
 
         @JsonProperty("created_at") String createdAt,
 

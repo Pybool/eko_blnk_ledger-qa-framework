@@ -20,6 +20,16 @@ public final class LedgerRepository {
             WHERE ledger_id = ?
             """;
 
+    private static final String FIND_BY_PROJECT_OWNER = """
+            SELECT
+                name,
+                ledger_id,
+                meta_data,
+                created_at
+            FROM blnk.ledgers
+            WHERE meta_data ->> 'project_owner' = ?
+            """;
+
     private final DatabaseClient database;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -48,5 +58,16 @@ public final class LedgerRepository {
                         parseMetadata(resultSet.getString("meta_data")),
                         resultSet.getTimestamp("created_at").toInstant()),
                 ledgerId);
+    }
+
+    public Optional<LedgerRecord> findByProjectOwner(String projectOwner) {
+        return database.queryOne(
+                FIND_BY_PROJECT_OWNER,
+                resultSet -> new LedgerRecord(
+                        resultSet.getString("name"),
+                        resultSet.getString("ledger_id"),
+                        parseMetadata(resultSet.getString("meta_data")),
+                        resultSet.getTimestamp("created_at").toInstant()),
+                projectOwner);
     }
 }

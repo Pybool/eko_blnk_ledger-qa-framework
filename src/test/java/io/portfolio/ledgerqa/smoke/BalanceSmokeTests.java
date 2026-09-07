@@ -49,7 +49,7 @@ class BalanceSmokeTests extends BaseTest {
 
         CreateLedgerRequest ledgerRequest = CreateLedgerRequest.of(
                 ledgerName,
-                "Blnk Tech");
+                "EKO-SDET");
 
         Response ledgerResponse = Allure.step(
                 "Create parent ledger",

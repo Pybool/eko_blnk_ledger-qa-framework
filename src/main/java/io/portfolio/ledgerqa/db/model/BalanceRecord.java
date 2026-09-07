@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 public record BalanceRecord(
         String balanceId,
         String ledgerId,
+        String currency,
         BigDecimal balance,
         BigDecimal creditBalance,
         BigDecimal debitBalance,

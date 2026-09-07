@@ -1,7 +1,9 @@
 package io.portfolio.ledgerqa.model.requests;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record CreateLedgerRequest(
         String name,
 
@@ -10,7 +12,13 @@ public record CreateLedgerRequest(
     public static CreateLedgerRequest of(
             String name,
             String projectOwner) {
-        return new CreateLedgerRequest(name, new Metadata(projectOwner));
+        Metadata metadata = projectOwner == null
+                ? null
+                : new Metadata(projectOwner);
+
+        return new CreateLedgerRequest(
+                name,
+                metadata);
     }
 
     public record Metadata(

@@ -16,6 +16,10 @@ public final class BalanceClient extends BaseClient {
         return post(BALANCES, request);
     }
 
+    public Response createRaw(String rawJson) {
+        return post(BALANCES, rawJson);
+    }
+
     public Response getById(String balanceId) {
         return get(BALANCES + "/" + balanceId);
     }

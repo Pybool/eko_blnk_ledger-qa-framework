@@ -12,6 +12,7 @@ public final class BalanceRepository {
                 balance_id,
                 ledger_id,
                 balance,
+                currency,
                 credit_balance,
                 debit_balance,
                 inflight_balance,
@@ -35,6 +36,7 @@ public final class BalanceRepository {
                 resultSet -> new BalanceRecord(
                         resultSet.getString("balance_id"),
                         resultSet.getString("ledger_id"),
+                        resultSet.getString("currency"),
                         resultSet.getBigDecimal("balance"),
                         resultSet.getBigDecimal("credit_balance"),
                         resultSet.getBigDecimal("debit_balance"),
