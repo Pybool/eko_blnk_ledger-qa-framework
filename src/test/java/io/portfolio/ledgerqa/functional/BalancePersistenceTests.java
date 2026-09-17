@@ -30,7 +30,7 @@ import io.restassured.response.Response;
 
 @Epic("Balance Quality Platform")
 @Feature("Balances")
-@Tag("functional")
+@Tag("sanity")
 class BalancePersistenceTests extends FunctionalTestBase {
 
     @Test
@@ -42,10 +42,13 @@ class BalancePersistenceTests extends FunctionalTestBase {
             """)
     @Severity(SeverityLevel.CRITICAL)
     void shouldPersistCreatedBalanceCorrectly() {
+        // When
         CreatedLedgerAndBalance created = createLedgerAndBalance();
         CreateLedgerResponse ledger = created.ledger();
         CreateBalanceResponse balance = created.balance();
         Response response = created.response();
+
+        // Then
 
         Allure.step("Verify API response", () -> {
             assertThat(response.statusCode()).isEqualTo(201);
@@ -71,8 +74,10 @@ class BalancePersistenceTests extends FunctionalTestBase {
             """)
     @Severity(SeverityLevel.CRITICAL)
     void shouldInitialiseEveryBalanceComponentToZero() {
+        // When
         CreateBalanceResponse balance = createLedgerAndBalance().balance();
 
+        // Then
         Allure.step("Verify API response components are zero", () -> {
             assertThat(balance.balance()).isZero();
             assertThat(balance.creditBalance()).isZero();
@@ -102,10 +107,12 @@ class BalancePersistenceTests extends FunctionalTestBase {
     @DisplayName("should fetch a balance with its correct details")
     @Severity(SeverityLevel.NORMAL)
     void shouldFetchBalanceWithCorrectDetails() {
+        // Given
         CreatedLedgerAndBalance created = createLedgerAndBalance();
         CreateLedgerResponse ledger = created.ledger();
         CreateBalanceResponse createdBalance = created.balance();
 
+        // When
         Response fetchResponse = Allure.step(
                 "Fetch balance via GET /balances/{id}",
                 () -> ApiClientFactory.balanceClient().getById(createdBalance.balanceId()));
@@ -114,6 +121,7 @@ class BalancePersistenceTests extends FunctionalTestBase {
 
         CreateBalanceResponse fetched = fetchResponse.as(CreateBalanceResponse.class);
 
+        // Then
         Allure.step("Verify fetched balance matches created balance", () -> {
             assertThat(fetchResponse.statusCode()).isEqualTo(200);
             assertThat(fetched.balanceId()).isEqualTo(createdBalance.balanceId());
@@ -140,11 +148,14 @@ class BalancePersistenceTests extends FunctionalTestBase {
     @DisplayName("should allow multiple balances under the same ledger and currency")
     @Severity(SeverityLevel.NORMAL)
     void shouldAllowMultipleBalancesUnderSameLedgerAndCurrency() {
+        // Given
         CreateLedgerResponse ledger = createLedger(TestData.unique("balance-persistence"));
 
+        // When
         CreateBalanceResponse first = createBalance(ledger.ledgerId(), "NGN");
         CreateBalanceResponse second = createBalance(ledger.ledgerId(), "NGN");
 
+        // Then
         Allure.step("Verify both balances are distinct and share the ledger", () -> {
             assertThat(first.balanceId()).isNotEqualTo(second.balanceId());
             assertThat(first.ledgerId()).isEqualTo(ledger.ledgerId());
@@ -164,11 +175,12 @@ class BalancePersistenceTests extends FunctionalTestBase {
     void shouldRejectBalanceCreationWhenLedgerDoesNotExist() {
         String missingLedgerId = TestData.unique("ldg_missing");
 
+        // When
         Response response = Allure.step(
                 "Attempt to create a balance under a non-existent ledger",
                 () -> ApiClientFactory.balanceClient()
                         .create(new CreateBalanceRequest(missingLedgerId, "NGN")));
-
+        // Then
         validateBalanceNotCreated(response);
     }
 
@@ -177,12 +189,13 @@ class BalancePersistenceTests extends FunctionalTestBase {
     @DisplayName("should not create a balance when 'ledger_id' is missing")
     @Severity(SeverityLevel.NORMAL)
     void shouldRejectBalanceCreationWhenLedgerIdIsMissing() {
+        // When
         Response response = Allure.step(
                 "Attempt to create a balance without ledger_id",
                 () -> ApiClientFactory.balanceClient().createRaw("""
                         { "currency": "NGN" }
                         """));
-
+        // Then
         validateBalanceNotCreated(response);
     }
 
@@ -191,14 +204,17 @@ class BalancePersistenceTests extends FunctionalTestBase {
     @DisplayName("should not create a balance when 'currency' is missing")
     @Severity(SeverityLevel.NORMAL)
     void shouldRejectBalanceCreationWhenCurrencyIsMissing() {
+        // Given
         CreateLedgerResponse ledger = createLedger(TestData.unique("balance-persistence"));
 
+        // When
         Response response = Allure.step(
                 "Attempt to create a balance without currency",
                 () -> ApiClientFactory.balanceClient().createRaw("""
                         { "ledger_id": "%s" }
                         """.formatted(ledger.ledgerId())));
 
+        // Then
         validateBalanceNotCreated(response);
     }
 
@@ -207,13 +223,15 @@ class BalancePersistenceTests extends FunctionalTestBase {
     @DisplayName("should not create a balance with an unknown currency code")
     @Severity(SeverityLevel.MINOR)
     void shouldRejectBalanceCreationWhenCurrencyIsUnknownCode() {
+        //Given
         CreateLedgerResponse ledger = createLedger(TestData.unique("balance-persistence"));
 
+        //When
         Response response = Allure.step(
                 "Attempt to create a balance with a non-ISO currency code",
                 () -> ApiClientFactory.balanceClient()
                         .create(new CreateBalanceRequest(ledger.ledgerId(), "ZZZ")));
-
+        //Then
         validateBalanceNotCreated(response);
     }
 
@@ -222,10 +240,11 @@ class BalancePersistenceTests extends FunctionalTestBase {
     @DisplayName("should not create a balance when the payload is empty")
     @Severity(SeverityLevel.NORMAL)
     void shouldRejectBalanceCreationWhenPayloadIsEmpty() {
+        //When
         Response response = Allure.step(
                 "Attempt to create a balance with an empty payload",
                 () -> ApiClientFactory.balanceClient().createRaw("{}"));
-
+        //Then
         validateBalanceNotCreated(response);
     }
 
@@ -234,12 +253,13 @@ class BalancePersistenceTests extends FunctionalTestBase {
     @DisplayName("should not create a balance when the payload is malformed JSON")
     @Severity(SeverityLevel.NORMAL)
     void shouldRejectBalanceCreationWhenPayloadIsMalformedJson() {
+        //When
         Response response = Allure.step(
                 "Attempt to create a balance with malformed JSON",
                 () -> ApiClientFactory.balanceClient().createRaw("""
                         { "ledger_id": "ldg_x", "currency":
                         """));
-
+        //Then
         validateBalanceNotCreated(response);
     }
 

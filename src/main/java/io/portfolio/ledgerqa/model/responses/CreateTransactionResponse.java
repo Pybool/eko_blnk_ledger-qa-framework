@@ -4,62 +4,59 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 public record CreateTransactionResponse(
 
-        @JsonProperty("precise_amount")
-        long preciseAmount,
+                @JsonProperty("precise_amount") long preciseAmount,
 
-        long amount,
+                long amount,
 
-        @JsonProperty("amount_string")
-        String amountString,
+                @JsonProperty("amount_string") String amountString,
 
-        int precision,
+                int precision,
 
-        @JsonProperty("overdraft_limit")
-        long overdraftLimit,
+                @JsonProperty("overdraft_limit") long overdraftLimit,
 
-        @JsonProperty("transaction_id")
-        String transactionId,
+                @JsonProperty("transaction_id") String transactionId,
 
-        @JsonProperty("parent_transaction")
-        String parentTransaction,
+                @JsonProperty("parent_transaction") String parentTransaction,
 
-        String source,
+                String source,
 
-        String destination,
+                String destination,
 
-        String reference,
+                String reference,
 
-        String currency,
+                String currency,
 
-        String description,
+                String description,
 
-        String status,
+                String status,
 
-        String hash,
+                String hash,
 
-        @JsonProperty("allow_overdraft")
-        boolean allowOverdraft,
+                @JsonProperty("allow_overdraft") boolean allowOverdraft,
 
-        boolean inflight,
+                boolean inflight,
 
-        @JsonProperty("skip_queue")
-        boolean skipQueue,
+                @JsonProperty("skip_queue") boolean skipQueue,
 
-        boolean atomic,
+                boolean atomic,
 
-        @JsonProperty("created_at")
-        String createdAt,
+                @JsonProperty("created_at") String createdAt,
 
-        @JsonProperty("effective_date")
-        String effectiveDate,
+                @JsonProperty("effective_date") String effectiveDate,
 
-        @JsonProperty("scheduled_for")
-        String scheduledFor,
+                @JsonProperty("scheduled_for") String scheduledFor,
 
-        @JsonProperty("inflight_expiry_date")
-        String inflightExpiryDate,
+                @JsonProperty("inflight_expiry_date") String inflightExpiryDate,
 
-        @JsonProperty("inflight_commit_date")
-        String inflightCommitDate
+                @JsonProperty("inflight_commit_date") String inflightCommitDate,
 
-) {}
+                @JsonProperty("meta_data") MetaData metaData
+
+) {
+        public record MetaData(
+
+                 @JsonProperty("allow_overdraft") boolean allowOverdraft
+
+        ) {
+        }
+}

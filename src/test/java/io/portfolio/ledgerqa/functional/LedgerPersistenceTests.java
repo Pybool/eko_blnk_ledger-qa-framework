@@ -27,7 +27,7 @@ import io.restassured.response.Response;
 
 @Epic("Ledger Quality Platform")
 @Feature("Ledgers")
-@Tag("integration")
+@Tag("sanity")
 class LedgerPersistenceTests extends BaseTest {
 
     @Test

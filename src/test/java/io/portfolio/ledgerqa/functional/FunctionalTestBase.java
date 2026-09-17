@@ -10,8 +10,10 @@ import io.portfolio.ledgerqa.db.RepositoryFactory;
 import io.portfolio.ledgerqa.db.model.BalanceRecord;
 import io.portfolio.ledgerqa.model.requests.CreateBalanceRequest;
 import io.portfolio.ledgerqa.model.requests.CreateLedgerRequest;
+import io.portfolio.ledgerqa.model.requests.CreateTransactionRequest;
 import io.portfolio.ledgerqa.model.responses.CreateBalanceResponse;
 import io.portfolio.ledgerqa.model.responses.CreateLedgerResponse;
+import io.portfolio.ledgerqa.model.responses.CreateTransactionResponse;
 import io.portfolio.ledgerqa.testsupport.TestData;
 import io.qameta.allure.Allure;
 import io.restassured.response.Response;
@@ -54,10 +56,7 @@ public abstract class FunctionalTestBase extends BaseTest {
                 Response response = Allure.step(
                                 "Create %s balance".formatted(currency),
                                 () -> ApiClientFactory.balanceClient()
-                                                .create(
-                                                                new CreateBalanceRequest(
-                                                                                ledgerId,
-                                                                                currency)));
+                                                .create(new CreateBalanceRequest(ledgerId, currency)));
 
                 attachJson("Create Balance Response", response);
 
@@ -86,14 +85,48 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 response);
         }
 
+        protected CreateTransactionResponse fundBalanceFromWorld(
+                        String worldBalanceId,
+                        String destinationBalanceId,
+                        long amount,
+                        String currency,
+                        int precision) {
+                String reference = TestData.unique("world-fund-ref");
+
+                CreateTransactionRequest request = new CreateTransactionRequest(
+                                "Fund balance from world",
+                                reference,
+                                worldBalanceId,
+                                destinationBalanceId,
+                                amount,
+                                currency,
+                                precision,
+                                true,
+                                true,
+                                false
+                );
+
+                Response response = Allure.step(
+                                "Fund %s balance with %d from world".formatted(
+                                                currency,
+                                                amount),
+                                () -> ApiClientFactory.transactionClient()
+                                                .create(request));
+
+                attachJson("World Funding Transaction Response", response);
+
+                assertThat(response.statusCode())
+                                .as("World funding transaction should succeed")
+                                .isBetween(200, 299);
+
+                return response.as(CreateTransactionResponse.class);
+        }
+
         protected BalanceRecord fetchPersistedBalance(
                         String balanceId) {
                 return RepositoryFactory.balanceRepository()
                                 .findById(balanceId)
-                                .orElseThrow(
-                                                () -> new AssertionError(
-                                                                "Balance was not persisted in database: "
-                                                                                + balanceId));
+                                .orElseThrow(() -> new AssertionError("Balance was not persisted in database: " + balanceId));
         }
 
         protected void assertDerivedBalanceInvariant(
@@ -102,9 +135,8 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 .subtract(balance.debitBalance());
 
                 assertThat(balance.balance())
-                                .as(
-                                                "INV-001 derived balance for %s",
-                                                balance.balanceId())
+                                .as("INV-001 derived balance for %s",
+                                  balance.balanceId())
                                 .isEqualByComparingTo(expected);
         }
 
@@ -123,6 +155,37 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 name,
                                 "application/json",
                                 body);
+        }
+
+        protected record FundedBalanceFixture(
+                        CreateLedgerResponse ledger,
+                        CreateBalanceResponse world,
+                        CreateBalanceResponse balance,
+                        CreateTransactionResponse fundingTransaction) {
+        }
+
+        protected FundedBalanceFixture createFundedBalance(
+                        long amount,
+                        String currency,
+                        int precision) {
+                CreateLedgerResponse ledger = createLedger(TestData.unique("funded-balance"));
+
+                CreateBalanceResponse world = createBalance(ledger.ledgerId(), currency);
+
+                CreateBalanceResponse balance = createBalance(ledger.ledgerId(), currency);
+
+                CreateTransactionResponse fundingTransaction = fundBalanceFromWorld(
+                                world.balanceId(),
+                                balance.balanceId(),
+                                amount,
+                                currency,
+                                precision);
+
+                return new FundedBalanceFixture(
+                                ledger,
+                                world,
+                                balance,
+                                fundingTransaction);
         }
 
         protected record CreatedLedgerAndBalance(
