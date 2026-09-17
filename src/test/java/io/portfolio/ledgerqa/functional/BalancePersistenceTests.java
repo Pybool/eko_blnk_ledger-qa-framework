@@ -16,6 +16,8 @@ import io.portfolio.ledgerqa.model.requests.CreateBalanceRequest;
 import io.portfolio.ledgerqa.model.requests.CreateLedgerRequest;
 import io.portfolio.ledgerqa.model.responses.CreateBalanceResponse;
 import io.portfolio.ledgerqa.model.responses.CreateLedgerResponse;
+import io.portfolio.ledgerqa.functional.FunctionalTestBase;
+
 import io.portfolio.ledgerqa.testsupport.TestData;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Description;
@@ -29,7 +31,7 @@ import io.restassured.response.Response;
 @Epic("Balance Quality Platform")
 @Feature("Balances")
 @Tag("functional")
-class BalancePersistenceTests extends BaseTest {
+class BalancePersistenceTests extends FunctionalTestBase {
 
     @Test
     @Story("Balance Persistence (Data Integrity)")
@@ -241,68 +243,11 @@ class BalancePersistenceTests extends BaseTest {
         validateBalanceNotCreated(response);
     }
 
-    private CreateLedgerResponse createLedger(String projectOwner) {
-        CreateLedgerRequest request = CreateLedgerRequest.of(TestData.unique("ledger"), projectOwner);
-        Response response = ApiClientFactory.ledgerClient().create(request);
-        attachJson("Create Ledger Response", response);
-        assertThat(response.statusCode()).isEqualTo(201);
-        return response.as(CreateLedgerResponse.class);
-    }
-
-    private Response postBalance(String ledgerId, String currency) {
-        Response response = Allure.step(
-                "Create %s balance".formatted(currency),
-                () -> ApiClientFactory.balanceClient()
-                        .create(new CreateBalanceRequest(ledgerId, currency)));
-        attachJson("Create Balance Response", response);
-        return response;
-    }
-
-    private CreateBalanceResponse createBalance(String ledgerId, String currency) {
-        Response response = postBalance(ledgerId, currency);
-        assertThat(response.statusCode()).isEqualTo(201);
-        return response.as(CreateBalanceResponse.class);
-    }
-
-    private record CreatedLedgerAndBalance(
-            CreateLedgerResponse ledger,
-            CreateBalanceResponse balance,
-            Response response) {
-    }
-
-    private CreatedLedgerAndBalance createLedgerAndBalance() {
-        CreateLedgerResponse ledger = createLedger(TestData.unique("balance-persistence"));
-        Response response = postBalance(ledger.ledgerId(), "NGN");
-        assertThat(response.statusCode()).isEqualTo(201);
-        return new CreatedLedgerAndBalance(ledger, response.as(CreateBalanceResponse.class), response);
-    }
-
-    private BalanceRecord fetchPersistedBalance(String balanceId) {
-        return RepositoryFactory.balanceRepository()
-                .findById(balanceId)
-                .orElseThrow(() -> new AssertionError(
-                        "Balance was not persisted in database: " + balanceId));
-    }
-
-    private void assertDerivedBalanceInvariant(BalanceRecord balance) {
-        assertThat(balance.balance())
-                .as("INV-001 derived balance for %s", balance.balanceId())
-                .isEqualByComparingTo(balance.creditBalance().subtract(balance.debitBalance()));
-    }
-
     private void validateBalanceNotCreated(Response response) {
         attachJson("API Rejection Response HTTP " + response.statusCode(), response);
         Allure.step("Verify balance creation was rejected", () -> {
             assertThat(response.statusCode()).isBetween(400, 499);
             assertThat(response.getBody().asString()).isNotBlank();
         });
-    }
-
-    private void attachJson(String name, Response response) {
-        String body = response.getBody().asPrettyString();
-        System.out.printf(
-                "%n===== %s =====%n%s%n%s%n=====================%n",
-                name, response.getStatusLine(), body);
-        Allure.addAttachment(name, "application/json", body);
     }
 }

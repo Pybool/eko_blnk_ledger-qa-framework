@@ -5,5 +5,7 @@ public enum TransactionStatus {
     APPLIED,
     INFLIGHT,
     VOID,
-    REJECTED
+    REJECTED,
+    COMMIT,
+    EXPIRED_INFLIGHT
 }
