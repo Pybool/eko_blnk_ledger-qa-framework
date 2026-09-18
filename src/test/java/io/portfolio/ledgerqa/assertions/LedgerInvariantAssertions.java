@@ -1,16 +1,23 @@
 package io.portfolio.ledgerqa.assertions;
 
-import io.portfolio.ledgerqa.domain.Balance;
-
 import static org.assertj.core.api.Assertions.assertThat;
 
-public final class LedgerInvariantAssertions {
-    private LedgerInvariantAssertions() {}
+import java.math.BigDecimal;
+import io.portfolio.ledgerqa.db.model.BalanceRecord;
 
-    public static void assertDerivedBalance(Balance balance) {
+
+public final class LedgerInvariantAssertions {
+    private LedgerInvariantAssertions() {
+    }
+
+    //INV-01
+    public static void assertDerivedBalanceInvariant(BalanceRecord balance) {
+        BigDecimal expected = balance.creditBalance()
+                .subtract(balance.debitBalance());
+
         assertThat(balance.balance())
-                .isEqualByComparingTo(
-                        balance.creditBalance().subtract(balance.debitBalance())
-                );
+                .as("INV-001 derived balance for %s",
+                        balance.balanceId())
+                .isEqualByComparingTo(expected);
     }
 }

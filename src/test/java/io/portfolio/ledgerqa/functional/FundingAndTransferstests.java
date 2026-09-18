@@ -12,6 +12,8 @@ import io.portfolio.ledgerqa.db.model.BalanceRecord;
 import io.portfolio.ledgerqa.model.responses.CreateBalanceResponse;
 import io.portfolio.ledgerqa.model.responses.CreateTransactionResponse;
 import io.portfolio.ledgerqa.model.responses.CreateLedgerResponse;
+import io.portfolio.ledgerqa.assertions.LedgerInvariantAssertions;
+
 import io.portfolio.ledgerqa.testsupport.TestData;
 import io.qameta.allure.Allure;
 import io.qameta.allure.Epic;
@@ -86,7 +88,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                                                         recipientBefore.debitBalance());
                 });
 
-                Allure.step("Verify Recipient INV-001", () -> assertDerivedBalanceInvariant(recipientAfter));
+                Allure.step("Verify Recipient INV-001", () -> LedgerInvariantAssertions.assertDerivedBalanceInvariant(recipientAfter));
 
                 BigDecimal negativeFundingAmount = BigDecimal.valueOf(-fundingAmount);
                 assertThat(worldAfter.balance()).isEqualTo(negativeFundingAmount);
@@ -110,7 +112,68 @@ class FundingAndTransferTests extends FunctionalTestBase {
                                                                         .subtract(BigDecimal.valueOf(fundingAmount)));
                 });
 
-                Allure.step("Verify Soiurce INV-001", () -> assertDerivedBalanceInvariant(worldAfter));
+                Allure.step("Verify Soiurce INV-001", () -> LedgerInvariantAssertions.assertDerivedBalanceInvariant(worldAfter));
+
+        }
+
+        @Test
+        @Tag("FUN-02")
+        @Story("FUN-02 - Transfer between balances in the same ledger")
+        @DisplayName("should transfer the exact amount between two balances in the same ledger")
+        void shouldTransferExactAmountBetweenBalancesInSameLedger() {
+                long fundingAmount = 7_000;
+                long debitAmount = 1_340;
+                String currency = "NGN";
+                int precision = 100;
+
+                // Given
+                FundedBalanceFixture sourceBalanceObject = createFundedBalance(fundingAmount, currency, precision);
+                CreateLedgerResponse ledger = sourceBalanceObject.ledger();
+                CreateBalanceResponse destinationBalance = createBalance(ledger.ledgerId(), currency);
+
+                // When
+                CreateBalanceResponse sourceBalance = sourceBalanceObject.balance();
+                CreateTransactionResponse transferResponse = makeTransfer(
+                                sourceBalance.balanceId(),
+                                destinationBalance.balanceId(),
+                                debitAmount, currency, precision,
+                                false,
+                                true, false);
+
+                // Then fetch databasse persisted data Via SQl queriies
+                BalanceRecord sourceBalanceAfter = fetchPersistedBalance(sourceBalance.balanceId());
+                BalanceRecord destinationBalanceAfter = fetchPersistedBalance(destinationBalance.balanceId());
+
+                Allure.step("Verify balances", () -> {
+                        assertThat(transferResponse.status()).isEqualTo("APPLIED");
+                        // Source debit balance after trnafser increased by debitAmount
+                        assertThat(sourceBalanceAfter.debitBalance())
+                                        .isEqualTo(BigDecimal.valueOf(sourceBalance.debitBalance() + debitAmount));
+                        // Source balance after transfer reduced by debitAmount after transfer
+                        assertThat(sourceBalanceAfter.balance())
+                                        .isEqualTo(BigDecimal.valueOf(fundingAmount - debitAmount));
+                        // Destination debit balance remains unchanhed
+                        assertThat(destinationBalanceAfter.debitBalance())
+                                        .isEqualTo(BigDecimal.valueOf(destinationBalance.debitBalance()));
+                        // Destination credit balance inccreased by the source debited amount after
+                        // transfer
+                        assertThat(destinationBalanceAfter.creditBalance())
+                                        .isEqualTo(BigDecimal
+                                                        .valueOf(destinationBalance.creditBalance() + debitAmount));
+
+                        // Destination balance inccreased by the source debited amount after
+                        // transfer
+                        assertThat(destinationBalanceAfter.balance())
+                                        .isEqualTo(BigDecimal
+                                                        .valueOf(destinationBalance.balance() + debitAmount));
+
+                });
+
+                // Verify against our first inavatiant law
+                Allure.step("Verify Soiurce INV-001",
+                                () -> LedgerInvariantAssertions.assertDerivedBalanceInvariant(sourceBalanceAfter));
+                Allure.step("Verify destination INV-001",
+                                () -> LedgerInvariantAssertions.assertDerivedBalanceInvariant(destinationBalanceAfter));
 
         }
 }

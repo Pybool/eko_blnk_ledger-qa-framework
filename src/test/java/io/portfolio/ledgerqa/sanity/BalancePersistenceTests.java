@@ -13,6 +13,8 @@ import io.portfolio.ledgerqa.db.model.BalanceRecord;
 import io.portfolio.ledgerqa.functional.FunctionalTestBase;
 import io.portfolio.ledgerqa.model.responses.CreateBalanceResponse;
 import io.portfolio.ledgerqa.model.responses.CreateLedgerResponse;
+import io.portfolio.ledgerqa.assertions.LedgerInvariantAssertions;
+
 
 import io.portfolio.ledgerqa.testsupport.TestData;
 import io.qameta.allure.Allure;
@@ -94,7 +96,7 @@ class BalancePersistenceTests extends FunctionalTestBase {
             assertThat(persisted.inflightCreditBalance()).isEqualByComparingTo(BigDecimal.ZERO);
             assertThat(persisted.inflightDebitBalance()).isEqualByComparingTo(BigDecimal.ZERO);
             assertThat(persisted.version()).isEqualTo(1);
-            assertDerivedBalanceInvariant(persisted);
+            LedgerInvariantAssertions.assertDerivedBalanceInvariant(persisted);
         });
     }
 

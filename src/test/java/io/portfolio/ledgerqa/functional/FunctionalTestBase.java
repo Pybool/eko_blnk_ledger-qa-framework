@@ -103,8 +103,7 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 precision,
                                 true,
                                 true,
-                                false
-                );
+                                false);
 
                 Response response = Allure.step(
                                 "Fund %s balance with %d from world".formatted(
@@ -122,22 +121,51 @@ public abstract class FunctionalTestBase extends BaseTest {
                 return response.as(CreateTransactionResponse.class);
         }
 
+        protected CreateTransactionResponse makeTransfer(
+                        String sourceBalanceId,
+                        String destinationBalanceId,
+                        long amount,
+                        String currency,
+                        int precision,
+                        Boolean allowOverdraft,
+                        Boolean skipQueue,
+                        Boolean inflight) {
+                String reference = TestData.unique("make-transfer-ref");
+
+                CreateTransactionRequest request = new CreateTransactionRequest(
+                                "Transfer from source balance to destination balance",
+                                reference,
+                                sourceBalanceId,
+                                destinationBalanceId,
+                                amount,
+                                currency,
+                                precision,
+                                allowOverdraft,
+                                skipQueue,
+                                inflight);
+
+                Response response = Allure.step(
+                                "Fund %s balance with %d from a source".formatted(
+                                                currency,
+                                                amount),
+                                () -> ApiClientFactory.transactionClient()
+                                                .create(request));
+
+                attachJson("Transfer Transaction Response", response);
+
+                assertThat(response.statusCode())
+                                .as("Transfer transaction should succeed")
+                                .isBetween(200, 299);
+
+                return response.as(CreateTransactionResponse.class);
+        }
+
         protected BalanceRecord fetchPersistedBalance(
                         String balanceId) {
                 return RepositoryFactory.balanceRepository()
                                 .findById(balanceId)
-                                .orElseThrow(() -> new AssertionError("Balance was not persisted in database: " + balanceId));
-        }
-
-        protected void assertDerivedBalanceInvariant(
-                        BalanceRecord balance) {
-                BigDecimal expected = balance.creditBalance()
-                                .subtract(balance.debitBalance());
-
-                assertThat(balance.balance())
-                                .as("INV-001 derived balance for %s",
-                                  balance.balanceId())
-                                .isEqualByComparingTo(expected);
+                                .orElseThrow(() -> new AssertionError(
+                                                "Balance was not persisted in database: " + balanceId));
         }
 
         protected void attachJson(
