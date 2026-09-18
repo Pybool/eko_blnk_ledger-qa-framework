@@ -144,7 +144,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 BalanceRecord sourceBalanceAfter = fetchPersistedBalance(sourceBalance.balanceId());
                 BalanceRecord destinationBalanceAfter = fetchPersistedBalance(destinationBalance.balanceId());
 
-                Allure.step("Verify balances", () -> {
+                Allure.step("Verify balances and invariant rule 'INV-01'", () -> {
                         assertThat(transferResponse.status()).isEqualTo("APPLIED");
                         // Source debit balance after trnafser increased by debitAmount
                         assertThat(sourceBalanceAfter.debitBalance())
@@ -174,6 +174,14 @@ class FundingAndTransferTests extends FunctionalTestBase {
                                 () -> LedgerInvariantAssertions.assertDerivedBalanceInvariant(sourceBalanceAfter));
                 Allure.step("Verify destination INV-001",
                                 () -> LedgerInvariantAssertions.assertDerivedBalanceInvariant(destinationBalanceAfter));
+
+        }
+
+        @Test 
+        @Tag("FUN-03") 
+        @Story("FUN-03 - Transfer across different ledgers") 
+        @DisplayName("should characterize same-currency transfers across different ledgers") 
+        void shouldCharacterizeTransferAcrossDifferentLedgers() { 
 
         }
 }
