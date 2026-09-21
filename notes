@@ -1,7 +1,14 @@
 since i have jdk-17 installed we have to pick 21 byrunning the below in powershell
 
+
 $env:JAVA_HOME="C:\Program Files\Eclipse Adoptium\jdk-21.0.12.101-hotspot"
 $env:Path="$env:JAVA_HOME\bin;$env:Path"
+
+
+docker compose stop server worker
+docker compose exec postgres psql -U postgres -c "DROP DATABASE blnk WITH (FORCE);"
+docker compose exec postgres psql -U postgres -c "CREATE DATABASE blnk;"
+docker compose exec postgres psql -U postgres -c "CREATE DATABASE blnk;"
 
 For this commit 
 

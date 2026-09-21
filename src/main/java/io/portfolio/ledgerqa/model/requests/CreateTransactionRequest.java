@@ -20,5 +20,4 @@ public record CreateTransactionRequest(
 
         @JsonProperty("skip_queue") boolean skipQueue,
 
-        boolean inflight) {
-}
+        boolean inflight) {}

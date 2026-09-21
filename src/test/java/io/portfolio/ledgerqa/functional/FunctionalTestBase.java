@@ -8,12 +8,16 @@ import io.portfolio.ledgerqa.api.ApiClientFactory;
 import io.portfolio.ledgerqa.base.BaseTest;
 import io.portfolio.ledgerqa.db.RepositoryFactory;
 import io.portfolio.ledgerqa.db.model.BalanceRecord;
+import io.portfolio.ledgerqa.db.model.TransactionRecord;
+import io.portfolio.ledgerqa.db.repository.TransactionRepository;
 import io.portfolio.ledgerqa.model.requests.CreateBalanceRequest;
 import io.portfolio.ledgerqa.model.requests.CreateLedgerRequest;
 import io.portfolio.ledgerqa.model.requests.CreateTransactionRequest;
+import io.portfolio.ledgerqa.model.requests.FetchTransactionRequest;
 import io.portfolio.ledgerqa.model.responses.CreateBalanceResponse;
 import io.portfolio.ledgerqa.model.responses.CreateLedgerResponse;
 import io.portfolio.ledgerqa.model.responses.CreateTransactionResponse;
+import io.portfolio.ledgerqa.model.responses.FetchTransactionResponse;
 import io.portfolio.ledgerqa.testsupport.TestData;
 import io.qameta.allure.Allure;
 import io.restassured.response.Response;
@@ -160,12 +164,77 @@ public abstract class FunctionalTestBase extends BaseTest {
                 return response.as(CreateTransactionResponse.class);
         }
 
+        protected Response makeTransferToFail(
+                        String sourceBalanceId,
+                        String destinationBalanceId,
+                        long amount,
+                        String currency,
+                        int precision,
+                        boolean allowOverdraft,
+                        boolean skipQueue,
+                        boolean inflight) {
+
+                String reference = TestData.unique("failed-transfer-ref");
+
+                CreateTransactionRequest request = new CreateTransactionRequest(
+                                "Transfer expected to fail",
+                                reference,
+                                sourceBalanceId,
+                                destinationBalanceId,
+                                amount,
+                                currency,
+                                precision,
+                                allowOverdraft,
+                                skipQueue,
+                                inflight);
+
+                Response response = Allure.step(
+                                "Attempt transfer of %d %s expected to fail"
+                                                .formatted(amount, currency),
+                                () -> ApiClientFactory.transactionClient()
+                                                .create(request));
+
+                attachJson("Failed Transfer Transaction Response", response);
+
+                assertThat(response.statusCode())
+                                .as("Transfer transaction should be rejected")
+                                .isBetween(400, 499);
+
+                return response;
+        }
+
         protected BalanceRecord fetchPersistedBalance(
                         String balanceId) {
                 return RepositoryFactory.balanceRepository()
                                 .findById(balanceId)
                                 .orElseThrow(() -> new AssertionError(
                                                 "Balance was not persisted in database: " + balanceId));
+        }
+
+        protected TransactionRecord fetchPersistedTransaction(
+                        String transactionId) {
+                return RepositoryFactory.transactionRepository()
+                                .findById(transactionId)
+                                .orElseThrow(() -> new AssertionError(
+                                                "Transaction was not persisted in database: " + transactionId));
+        }
+
+        protected FetchTransactionResponse fetchTransactionViaApi(
+                        String transactionId) {
+
+                Response response = Allure.step(
+                                "Fetch transaction details for %s via api".formatted(
+                                                transactionId),
+                                () -> ApiClientFactory.transactionClient()
+                                                .getById(transactionId));
+                attachJson("Failed Transfer Transaction Response", response);
+
+                assertThat(response.statusCode())
+                                .as("Transfer transaction should be retrieved")
+                                .isEqualTo(200);
+
+                return response.as(FetchTransactionResponse.class);
+
         }
 
         protected void attachJson(
