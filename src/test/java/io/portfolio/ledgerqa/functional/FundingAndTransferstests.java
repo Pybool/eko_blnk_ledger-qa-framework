@@ -3,7 +3,6 @@ package io.portfolio.ledgerqa.functional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -11,7 +10,6 @@ import org.junit.jupiter.api.Test;
 
 import io.portfolio.ledgerqa.db.model.BalanceRecord;
 import io.portfolio.ledgerqa.db.model.TransactionRecord;
-import io.portfolio.ledgerqa.helpers.Helpers;
 import io.portfolio.ledgerqa.model.responses.CreateBalanceResponse;
 import io.portfolio.ledgerqa.model.responses.CreateTransactionResponse;
 import io.portfolio.ledgerqa.model.responses.FetchTransactionResponse;
@@ -25,8 +23,8 @@ import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
 import io.restassured.response.Response;
 
-@Epic("Ledger Quality Platform")
-@Feature("Balances")
+@Epic("Funding & Transfers")
+@Feature("Funding & Transfers")
 @Tag("functional")
 class FundingAndTransferTests extends FunctionalTestBase {
 
@@ -129,7 +127,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
         @DisplayName("should transfer the exact amount between two balances in the same ledger")
         void shouldTransferExactAmountBetweenBalancesInSameLedger() {
                 long fundingAmount = 7_000;
-                long debitAmount = 1_340;
+                long transferAmount = 1_340;
                 String currency = "NGN";
                 int precision = 100;
 
@@ -143,7 +141,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 CreateTransactionResponse transferResponse = makeTransfer(
                                 sourceBalance.balanceId(),
                                 destinationBalance.balanceId(),
-                                debitAmount, currency, precision,
+                                transferAmount, currency, precision,
                                 false,
                                 true, false);
 
@@ -153,12 +151,12 @@ class FundingAndTransferTests extends FunctionalTestBase {
 
                 Allure.step("Verify balances and invariant rule 'INV-01'", () -> {
                         assertThat(transferResponse.status()).isEqualTo("APPLIED");
-                        // Source debit balance after trnafser increased by debitAmount
+                        // Source debit balance after trnafser increased by transferAmount
                         assertThat(sourceBalanceAfter.debitBalance())
-                                        .isEqualTo(BigDecimal.valueOf(sourceBalance.debitBalance() + debitAmount));
-                        // Source balance after transfer reduced by debitAmount after transfer
+                                        .isEqualTo(BigDecimal.valueOf(sourceBalance.debitBalance() + transferAmount));
+                        // Source balance after transfer reduced by transferAmount after transfer
                         assertThat(sourceBalanceAfter.balance())
-                                        .isEqualTo(BigDecimal.valueOf(fundingAmount - debitAmount));
+                                        .isEqualTo(BigDecimal.valueOf(fundingAmount - transferAmount));
                         // Destination debit balance remains unchanhed
                         assertThat(destinationBalanceAfter.debitBalance())
                                         .isEqualTo(BigDecimal.valueOf(destinationBalance.debitBalance()));
@@ -166,13 +164,13 @@ class FundingAndTransferTests extends FunctionalTestBase {
                         // transfer
                         assertThat(destinationBalanceAfter.creditBalance())
                                         .isEqualTo(BigDecimal
-                                                        .valueOf(destinationBalance.creditBalance() + debitAmount));
+                                                        .valueOf(destinationBalance.creditBalance() + transferAmount));
 
                         // Destination balance inccreased by the source debited amount after
                         // transfer
                         assertThat(destinationBalanceAfter.balance())
                                         .isEqualTo(BigDecimal
-                                                        .valueOf(destinationBalance.balance() + debitAmount));
+                                                        .valueOf(destinationBalance.balance() + transferAmount));
 
                 });
 
@@ -190,7 +188,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
         @DisplayName("should transfer between balances in different ledgers with the same currency")
         void shouldTransferBetweenBalancesInDifferentLedgersWithSameCurrency() {
                 long fundingAmount = 8_000;
-                long debitAmount = 4_200;
+                long transferAmount = 4_200;
                 String currency = "NGN";
                 int precision = 100;
 
@@ -226,16 +224,16 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 CreateTransactionResponse transferResponse = makeTransfer(
                                 source.balanceId(),
                                 destination.balanceId(),
-                                debitAmount, currency, precision,
+                                transferAmount, currency, precision,
                                 false,
                                 true, false);
 
                 BalanceRecord destinationAfterTransfer = fetchPersistedBalance(destination.balanceId());
                 BalanceRecord sourceAfterTransfer = fetchPersistedBalance(source.balanceId());
 
-                Allure.step("Verify source and destination balances", () -> {
+                Allure.step("Verify source and destination balances from API response", () -> {
                         assertThat(transferResponse.status()).isEqualTo("APPLIED");
-                        assertThat(transferResponse.preciseAmount()).isEqualTo(debitAmount);
+                        assertThat(transferResponse.preciseAmount()).isEqualTo(transferAmount);
                         assertThat(transferResponse.source()).isEqualTo(source.balanceId());
                         assertThat(transferResponse.destination()).isEqualTo(destination.balanceId());
                         assertThat(transferResponse.currency()).isEqualTo(currency);
@@ -244,12 +242,12 @@ class FundingAndTransferTests extends FunctionalTestBase {
 
                 Allure.step("Verify source and destination balances", () -> {
                         assertThat(transferResponse.status()).isEqualTo("APPLIED");
-                        // Source debit balance after trnafser increased by debitAmount
+                        // Source debit balance after trnafser increased by transferAmount
                         assertThat(sourceAfterTransfer.debitBalance())
-                                        .isEqualTo(BigDecimal.valueOf(source.debitBalance() + debitAmount));
-                        // Source balance after transfer reduced by debitAmount after transfer
+                                        .isEqualTo(BigDecimal.valueOf(source.debitBalance() + transferAmount));
+                        // Source balance after transfer reduced by transferAmount after transfer
                         assertThat(sourceAfterTransfer.balance())
-                                        .isEqualTo(BigDecimal.valueOf(fundingAmount - debitAmount));
+                                        .isEqualTo(BigDecimal.valueOf(fundingAmount - transferAmount));
                         // Destination debit balance remains unchanhed
                         assertThat(destinationAfterTransfer.debitBalance())
                                         .isEqualTo(BigDecimal.valueOf(destination.debitBalance()));
@@ -257,14 +255,13 @@ class FundingAndTransferTests extends FunctionalTestBase {
                         // transfer
                         assertThat(destinationAfterTransfer.creditBalance())
                                         .isEqualTo(BigDecimal
-                                                        .valueOf(destination.creditBalance() + debitAmount));
+                                                        .valueOf(destination.creditBalance() + transferAmount));
 
                         // Destination balance inccreased by the source debited amount after
                         // transfer
                         assertThat(destinationAfterTransfer.balance())
                                         .isEqualTo(BigDecimal
-                                                        .valueOf(destination.balance() + debitAmount));
-
+                                                        .valueOf(destination.balance() + transferAmount));
                 });
 
                 // Verify against our first invatiant law
@@ -282,7 +279,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
         @DisplayName("should reject a zero-amount transaction without mutating balances")
         void shouldRejectZeroAmountTransactionWithoutMutatingBalances() {
                 long fundingAmount = 8_000;
-                long debitAmount = 0;
+                long transferAmount = 0;
                 String currency = "NGN";
                 int precision = 100;
 
@@ -310,7 +307,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 Response transferResponse = makeTransferToFail(
                                 source.balanceId(),
                                 destination.balanceId(),
-                                debitAmount, currency, precision,
+                                transferAmount, currency, precision,
                                 false,
                                 true, false);
 
@@ -343,7 +340,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
         @DisplayName("should return the final transaction state and match the persisted database record")
         void shouldFetchFinalTransactionStateMatchingDatabase() {
                 long fundingAmount = 7_000;
-                long debitAmount = 3_500;
+                long transferAmount = 3_500;
                 String currency = "NGN";
                 int precision = 100;
 
@@ -360,7 +357,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 CreateTransactionResponse transferResponse = makeTransfer(
                                 sourceBalance.balanceId(),
                                 destinationBalance.balanceId(),
-                                debitAmount,
+                                transferAmount,
                                 currency,
                                 precision,
                                 false,
@@ -389,7 +386,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                                         .isEqualTo(destinationBalance.balanceId());
 
                         assertThat(transactionFromApi.preciseAmount())
-                                        .isEqualTo(debitAmount);
+                                        .isEqualTo(transferAmount);
 
                         assertThat(transactionFromApi.currency())
                                         .isEqualTo(currency);
