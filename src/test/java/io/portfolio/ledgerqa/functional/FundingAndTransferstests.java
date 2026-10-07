@@ -37,6 +37,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 long fundingAmount = 10_000;
                 String currency = "NGN";
                 int precision = 100;
+                long overdraftLimit = 0;
 
                 // Given
                 CreateLedgerResponse ledger = createLedger(TestData.unique("fun-01"));
@@ -53,6 +54,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                                 recipient.balanceId(),
                                 fundingAmount,
                                 currency,
+                                overdraftLimit,
                                 precision);
 
                 BalanceRecord worldAfter = fetchPersistedBalance(world.balanceId());
@@ -130,9 +132,10 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 long transferAmount = 1_340;
                 String currency = "NGN";
                 int precision = 100;
+                long overdraftLimit = 0;
 
                 // Given
-                FundedBalanceFixture sourceBalanceObject = createFundedBalance(fundingAmount, currency, precision);
+                FundedBalanceFixture sourceBalanceObject = createFundedBalance(fundingAmount, currency, overdraftLimit, precision);
                 CreateLedgerResponse ledger = sourceBalanceObject.ledger();
                 CreateBalanceResponse destinationBalance = createBalance(ledger.ledgerId(), currency);
 
@@ -143,6 +146,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                                 destinationBalance.balanceId(),
                                 transferAmount, currency, precision,
                                 false,
+                                overdraftLimit,
                                 true, false);
 
                 // Then fetch databasse persisted data Via SQl queriies
@@ -191,6 +195,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 long transferAmount = 4_200;
                 String currency = "NGN";
                 int precision = 100;
+                long overdraftLimit = 0;
 
                 // Given (Create ledger A and balances)
                 CreateLedgerResponse ledgerA = createLedger(TestData.unique("fun-03-ledger-a"));
@@ -200,7 +205,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 CreateBalanceResponse source = createBalance(ledgerA.ledgerId(), currency);
 
                 CreateTransactionResponse fundingTransaction = fundBalanceFromWorld(world.balanceId(),
-                                source.balanceId(), fundingAmount, currency, precision);
+                                source.balanceId(), fundingAmount, currency, overdraftLimit, precision);
 
                 BalanceRecord sourceAfter = fetchPersistedBalance(source.balanceId());
 
@@ -226,6 +231,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                                 destination.balanceId(),
                                 transferAmount, currency, precision,
                                 false,
+                                overdraftLimit,
                                 true, false);
 
                 BalanceRecord destinationAfterTransfer = fetchPersistedBalance(destination.balanceId());
@@ -282,6 +288,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 long transferAmount = 0;
                 String currency = "NGN";
                 int precision = 100;
+                long overdraftLimit = 0;
 
                 // Given (Create ledger A and balances)
                 CreateLedgerResponse ledger = createLedger(TestData.unique("fun-04-ledger"));
@@ -292,7 +299,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 CreateBalanceResponse destination = createBalance(ledger.ledgerId(), currency);
 
                 CreateTransactionResponse fundingTransaction = fundBalanceFromWorld(world.balanceId(),
-                                source.balanceId(), fundingAmount, currency, precision);
+                                source.balanceId(), fundingAmount, currency, overdraftLimit, precision);
 
                 BalanceRecord sourceBalanceBefore = fetchPersistedBalance(source.balanceId());
                 BalanceRecord destinationBalanceBefore = fetchPersistedBalance(destination.balanceId());
@@ -308,7 +315,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                                 source.balanceId(),
                                 destination.balanceId(),
                                 transferAmount, currency, precision,
-                                false,
+                                false,overdraftLimit,
                                 true, false);
 
                 Allure.step("Verify zero-amount transaction was rejected", () -> {
@@ -343,9 +350,10 @@ class FundingAndTransferTests extends FunctionalTestBase {
                 long transferAmount = 3_500;
                 String currency = "NGN";
                 int precision = 100;
+                long overdraftLimit = 0;
 
                 // Given
-                FundedBalanceFixture sourceBalanceObject = createFundedBalance(fundingAmount, currency, precision);
+                FundedBalanceFixture sourceBalanceObject = createFundedBalance(fundingAmount, currency, overdraftLimit, precision);
 
                 CreateLedgerResponse ledger = sourceBalanceObject.ledger();
 
@@ -361,6 +369,7 @@ class FundingAndTransferTests extends FunctionalTestBase {
                                 currency,
                                 precision,
                                 false,
+                                overdraftLimit,
                                 true,
                                 false);
 

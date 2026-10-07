@@ -1,6 +1,7 @@
 package io.portfolio.ledgerqa.api;
 
 import io.portfolio.ledgerqa.model.requests.CreateTransactionRequest;
+import io.portfolio.ledgerqa.model.requests.CreateMultiSourceTransactionRequest;
 import io.portfolio.ledgerqa.model.requests.UpdateInflightRequest;
 import io.restassured.response.Response;
 import io.restassured.specification.RequestSpecification;
@@ -14,6 +15,10 @@ public final class TransactionClient extends BaseClient {
     }
 
     public Response create(CreateTransactionRequest request) {
+        return post(TRANSACTIONS, request);
+    }
+
+    public Response createMultiSourceTransaction(CreateMultiSourceTransactionRequest request){
         return post(TRANSACTIONS, request);
     }
 

@@ -2,15 +2,12 @@ package io.portfolio.ledgerqa.functional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import io.portfolio.ledgerqa.db.model.BalanceRecord;
-import io.portfolio.ledgerqa.db.model.TransactionRecord;
-import io.portfolio.ledgerqa.helpers.Helpers;
 import io.portfolio.ledgerqa.model.responses.CreateBalanceResponse;
 import io.portfolio.ledgerqa.model.responses.CreateTransactionResponse;
 import io.portfolio.ledgerqa.model.responses.CreateLedgerResponse;
@@ -22,232 +19,492 @@ import io.qameta.allure.Epic;
 import io.qameta.allure.Feature;
 import io.qameta.allure.Story;
 import io.restassured.response.Response;
-import io.restassured.response.ResponseBody;
 
 @Epic("Ledger Quality Platform")
 @Feature("Balances")
 @Tag("functional")
-class InsufficientFundAndOverdraft extends FunctionalTestBase {
+class InsufficientFundAndOverdraftTests extends FunctionalTestBase {
 
-    @Test
-    @Tag("FUN-06")
-    @Story("FUN-06 - Insufficient funds with overdraft disabled")
-    @DisplayName("should reject transfer exceeding source balance when overdraft is disabled")
-    void shouldRejectTransferExceedingSourceBalanceWhenOverdraftIsDisabled() {
-        long fundingAmount = 5_000;
-        long transferAmount = 7_000;
-        String currency = "NGN";
-        int precision = 100;
+        @Test
+        @Tag("FUN-06")
+        @Story("FUN-06 - Insufficient funds with overdraft disabled")
+        @DisplayName("should reject transfer exceeding source balance when overdraft is disabled")
+        void shouldRejectTransferExceedingSourceBalanceWhenOverdraftIsDisabled() {
+                long fundingAmount = 5_000;
+                long transferAmount = 7_000;
+                String currency = "NGN";
+                int precision = 100;
+                long overdraftLimit = 0;
 
-        // Given
-        CreateLedgerResponse ledger = createLedger(TestData.unique("fun-06-ledger"));
+                // Given
+                CreateLedgerResponse ledger = createLedger(TestData.unique("fun-06-ledger"));
 
-        CreateBalanceResponse worldBalance = createBalance(ledger.ledgerId(), currency);
+                CreateBalanceResponse worldBalance = createBalance(ledger.ledgerId(), currency);
 
-        CreateBalanceResponse sourceBalance = createBalance(ledger.ledgerId(), currency);
+                CreateBalanceResponse sourceBalance = createBalance(ledger.ledgerId(), currency);
 
-        CreateBalanceResponse destinationBalance = createBalance(ledger.ledgerId(), currency);
+                CreateBalanceResponse destinationBalance = createBalance(ledger.ledgerId(), currency);
 
-        fundBalanceFromWorld(worldBalance.balanceId(), sourceBalance.balanceId(), fundingAmount, currency,
-                precision);
+                fundBalanceFromWorld(worldBalance.balanceId(), sourceBalance.balanceId(), fundingAmount, currency,
+                                overdraftLimit,
+                                precision);
 
-        // Take SQl Query Db Snapshots beffore transfer attempt
-        BalanceRecord sourceBeforeTransfer = fetchPersistedBalance(sourceBalance.balanceId());
+                // Take SQl Query Db Snapshots beffore transfer attempt
+                BalanceRecord sourceBeforeTransfer = fetchPersistedBalance(sourceBalance.balanceId());
 
-        BalanceRecord destinationBeforeTransfer = fetchPersistedBalance(destinationBalance.balanceId());
+                BalanceRecord destinationBeforeTransfer = fetchPersistedBalance(destinationBalance.balanceId());
 
-        // When
-        Response transferAttemptResponse = makeTransferToFail(
-                sourceBalance.balanceId(),
-                destinationBalance.balanceId(),
-                transferAmount,
-                currency,
-                precision,
-                false,
-                true,
-                false);
+                // When
+                Response transferAttemptResponse = makeTransferToFail(
+                                sourceBalance.balanceId(),
+                                destinationBalance.balanceId(),
+                                transferAmount,
+                                currency,
+                                precision,
+                                false,
+                                overdraftLimit,
+                                true,
+                                false);
 
-        int statusCode = transferAttemptResponse.getStatusCode();
-        String messageCode = transferAttemptResponse.jsonPath()
-                .getString("error_detail.code");
+                int statusCode = transferAttemptResponse.getStatusCode();
+                String messageCode = transferAttemptResponse.jsonPath()
+                                .getString("error_detail.code");
 
-        Allure.step("Verify that transaction failedn with statis code 400 and message code 'TXN_INSUFFICIENT_FUNDS'",
-                () -> {
-                    assertThat(statusCode).isEqualTo(400);
-                    assertThat(messageCode).isEqualTo("TXN_INSUFFICIENT_FUNDS");
+                Allure.step("Verify that transaction failedn with statis code 400 and message code 'TXN_INSUFFICIENT_FUNDS'",
+                                () -> {
+                                        assertThat(statusCode).isEqualTo(400);
+                                        assertThat(messageCode).isEqualTo("TXN_INSUFFICIENT_FUNDS");
+                                });
+
+                // we Take SQl Query Db Snapshots after transfer attempt
+                BalanceRecord sourceAfterTransfer = fetchPersistedBalance(sourceBalance.balanceId());
+
+                BalanceRecord destinationAfterTransfer = fetchPersistedBalance(destinationBalance.balanceId());
+
+                // Then
+                Allure.step("Verify that INV-0O2 holds for source balance", () -> {
+                        LedgerInvariantAssertions.assertSettledBalanceUnchanged(sourceBeforeTransfer,
+                                        sourceAfterTransfer);
                 });
 
-        // we Take SQl Query Db Snapshots after transfer attempt
-        BalanceRecord sourceAfterTransfer = fetchPersistedBalance(sourceBalance.balanceId());
+                Allure.step("Verify that INV-0O2 holds for destination balance", () -> {
+                        LedgerInvariantAssertions.assertSettledBalanceUnchanged(destinationBeforeTransfer,
+                                        destinationAfterTransfer);
+                });
 
-        BalanceRecord destinationAfterTransfer = fetchPersistedBalance(destinationBalance.balanceId());
+                Allure.step("Verify that INV-0O1 holds for source balance after transfer attempt", () -> {
+                        LedgerInvariantAssertions.assertDerivedBalanceInvariant(sourceAfterTransfer);
+                });
 
-        // Then
-        Allure.step("Verify that INV-0O2 holds for source balance", () -> {
-            LedgerInvariantAssertions.assertSettledBalanceUnchanged(sourceBeforeTransfer,
-                    sourceAfterTransfer);
-        });
+                Allure.step("Verify that INV-0O1 holds for destination balance after transfer attempt", () -> {
+                        LedgerInvariantAssertions.assertDerivedBalanceInvariant(destinationAfterTransfer);
+                });
 
-        Allure.step("Verify that INV-0O2 holds for destination balance", () -> {
-            LedgerInvariantAssertions.assertSettledBalanceUnchanged(destinationBeforeTransfer,
-                    destinationAfterTransfer);
-        });
+        }
 
-        Allure.step("Verify that INV-0O1 holds for source balance after transfer attempt", () -> {
-            LedgerInvariantAssertions.assertDerivedBalanceInvariant(sourceAfterTransfer);
-        });
+        @Test
+        @Tag("FUN-07")
+        @Story("FUN-07 - Transfer exceeding source balance with overdraft enabled")
+        @DisplayName("should allow transfer exceeding source balance when overdraft is enabled")
+        void shouldAllowTransferExceedingSourceBalanceWhenOverdraftIsEnabled() {
 
-        Allure.step("Verify that INV-0O1 holds for destination balance after transfer attempt", () -> {
-            LedgerInvariantAssertions.assertDerivedBalanceInvariant(destinationAfterTransfer);
-        });
+                long fundingAmount = 5_000;
+                long transferAmount = 7_000;
+                String currency = "NGN";
+                int precision = 100;
+                long overdraftLimit = 0;
 
-    }
+                // Given
+                CreateLedgerResponse ledger = createLedger(TestData.unique("fun-07-ledger"));
 
-    @Test
-    @Tag("FUN-07")
-    @Story("FUN-07 - Transfer exceeding source balance with overdraft enabled")
-    @DisplayName("should allow transfer exceeding source balance when overdraft is enabled")
-    void shouldAllowTransferExceedingSourceBalanceWhenOverdraftIsEnabled() {
+                CreateBalanceResponse worldBalance = createBalance(ledger.ledgerId(), currency);
 
-        long fundingAmount = 5_000;
-        long transferAmount = 7_000;
-        String currency = "NGN";
-        int precision = 100;
+                CreateBalanceResponse sourceBalance = createBalance(ledger.ledgerId(), currency);
 
-        // Given
-        CreateLedgerResponse ledger = createLedger(TestData.unique("fun-07-ledger"));
+                CreateBalanceResponse destinationBalance = createBalance(ledger.ledgerId(), currency);
 
-        CreateBalanceResponse worldBalance = createBalance(ledger.ledgerId(), currency);
+                fundBalanceFromWorld(
+                                worldBalance.balanceId(),
+                                sourceBalance.balanceId(),
+                                fundingAmount,
+                                currency, overdraftLimit,
+                                precision);
 
-        CreateBalanceResponse sourceBalance = createBalance(ledger.ledgerId(), currency);
+                // Database snapshots before transfer
+                BalanceRecord sourceBeforeTransfer = fetchPersistedBalance(sourceBalance.balanceId());
 
-        CreateBalanceResponse destinationBalance = createBalance(ledger.ledgerId(), currency);
+                BalanceRecord destinationBeforeTransfer = fetchPersistedBalance(destinationBalance.balanceId());
 
-        fundBalanceFromWorld(
-                worldBalance.balanceId(),
-                sourceBalance.balanceId(),
-                fundingAmount,
-                currency,
-                precision);
+                // Verify preconditions
+                Allure.step("Verify source and destination balances before transfer", () -> {
 
-        // Database snapshots before transfer
-        BalanceRecord sourceBeforeTransfer = fetchPersistedBalance(sourceBalance.balanceId());
+                        // Source was funded with exactly 5,000
+                        assertThat(sourceBeforeTransfer.creditBalance())
+                                        .isEqualByComparingTo(BigDecimal.valueOf(fundingAmount));
 
-        BalanceRecord destinationBeforeTransfer = fetchPersistedBalance(destinationBalance.balanceId());
+                        assertThat(sourceBeforeTransfer.debitBalance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
 
-        // Verify preconditions
-        Allure.step("Verify source and destination balances before transfer", () -> {
+                        assertThat(sourceBeforeTransfer.balance())
+                                        .isEqualByComparingTo(BigDecimal.valueOf(fundingAmount));
 
-            // Source was funded with exactly 5,000
-            assertThat(sourceBeforeTransfer.creditBalance())
-                    .isEqualByComparingTo(BigDecimal.valueOf(fundingAmount));
+                        // Destination starts empty
+                        assertThat(destinationBeforeTransfer.creditBalance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
 
-            assertThat(sourceBeforeTransfer.debitBalance())
-                    .isEqualByComparingTo(BigDecimal.ZERO);
+                        assertThat(destinationBeforeTransfer.debitBalance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
 
-            assertThat(sourceBeforeTransfer.balance())
-                    .isEqualByComparingTo(BigDecimal.valueOf(fundingAmount));
+                        assertThat(destinationBeforeTransfer.balance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
 
-            // Destination starts empty
-            assertThat(destinationBeforeTransfer.creditBalance())
-                    .isEqualByComparingTo(BigDecimal.ZERO);
+                        // Ensure this really is an overdraft scenario
+                        assertThat(BigDecimal.valueOf(transferAmount))
+                                        .isGreaterThan(sourceBeforeTransfer.balance());
+                });
 
-            assertThat(destinationBeforeTransfer.debitBalance())
-                    .isEqualByComparingTo(BigDecimal.ZERO);
+                // When
+                CreateTransactionResponse transferResponse = makeTransfer(
+                                sourceBalance.balanceId(),
+                                destinationBalance.balanceId(),
+                                transferAmount,
+                                currency,
+                                precision,
+                                true, // allow overdraft
+                                overdraftLimit,
+                                true,
+                                false);
 
-            assertThat(destinationBeforeTransfer.balance())
-                    .isEqualByComparingTo(BigDecimal.ZERO);
+                // Database snapshots after transfer
+                BalanceRecord sourceAfterTransfer = fetchPersistedBalance(sourceBalance.balanceId());
 
-            // Ensure this really is an overdraft scenario
-            assertThat(BigDecimal.valueOf(transferAmount))
-                    .isGreaterThan(sourceBeforeTransfer.balance());
-        });
+                BalanceRecord destinationAfterTransfer = fetchPersistedBalance(destinationBalance.balanceId());
 
-        // When
-        CreateTransactionResponse transferResponse = makeTransfer(
-                sourceBalance.balanceId(),
-                destinationBalance.balanceId(),
-                transferAmount,
-                currency,
-                precision,
-                true, // allow overdraft
-                true,
-                false);
+                // Then
+                Allure.step("Verify overdraft transfer was applied", () -> {
 
-        // Database snapshots after transfer
-        BalanceRecord sourceAfterTransfer = fetchPersistedBalance(sourceBalance.balanceId());
+                        assertThat(transferResponse.status())
+                                        .isEqualTo("APPLIED");
 
-        BalanceRecord destinationAfterTransfer = fetchPersistedBalance(destinationBalance.balanceId());
+                        assertThat(transferResponse.allowOverdraft())
+                                        .isTrue();
 
-        // Then
-        Allure.step("Verify overdraft transfer was applied", () -> {
+                        assertThat(transferResponse.preciseAmount())
+                                        .isEqualTo(transferAmount);
+                });
 
-            assertThat(transferResponse.status())
-                    .isEqualTo("APPLIED");
+                Allure.step("Verify exact source balance effects", () -> {
 
-            assertThat(transferResponse.allowOverdraft())
-                    .isTrue();
+                        // Credit remains unchanged
+                        assertThat(sourceAfterTransfer.creditBalance())
+                                        .isEqualByComparingTo(
+                                                        sourceBeforeTransfer.creditBalance());
 
-            assertThat(transferResponse.preciseAmount())
-                    .isEqualTo(transferAmount);
-        });
+                        // Debit increases by transfer amount
+                        assertThat(sourceAfterTransfer.debitBalance())
+                                        .isEqualByComparingTo(
+                                                        sourceBeforeTransfer.debitBalance()
+                                                                        .add(BigDecimal.valueOf(transferAmount)));
 
-        Allure.step("Verify exact source balance effects", () -> {
+                        // Balance decreases by transfer amount
+                        assertThat(sourceAfterTransfer.balance())
+                                        .isEqualByComparingTo(
+                                                        sourceBeforeTransfer.balance()
+                                                                        .subtract(BigDecimal.valueOf(transferAmount)));
 
-            // Credit remains unchanged
-            assertThat(sourceAfterTransfer.creditBalance())
-                    .isEqualByComparingTo(
-                            sourceBeforeTransfer.creditBalance());
+                        // 5,000 - 7,000 = -2,000
+                        assertThat(sourceAfterTransfer.balance())
+                                        .isEqualByComparingTo(BigDecimal.valueOf(-2_000));
+                });
 
-            // Debit increases by transfer amount
-            assertThat(sourceAfterTransfer.debitBalance())
-                    .isEqualByComparingTo(
-                            sourceBeforeTransfer.debitBalance()
-                                    .add(BigDecimal.valueOf(transferAmount)));
+                Allure.step("Verify exact destination balance effects", () -> {
 
-            // Balance decreases by transfer amount
-            assertThat(sourceAfterTransfer.balance())
-                    .isEqualByComparingTo(
-                            sourceBeforeTransfer.balance()
-                                    .subtract(BigDecimal.valueOf(transferAmount)));
+                        // Debit remains unchanged
+                        assertThat(destinationAfterTransfer.debitBalance())
+                                        .isEqualByComparingTo(
+                                                        destinationBeforeTransfer.debitBalance());
 
-            // 5,000 - 7,000 = -2,000
-            assertThat(sourceAfterTransfer.balance())
-                    .isEqualByComparingTo(BigDecimal.valueOf(-2_000));
-        });
+                        // Credit increases by transfer amount
+                        assertThat(destinationAfterTransfer.creditBalance())
+                                        .isEqualByComparingTo(
+                                                        destinationBeforeTransfer.creditBalance()
+                                                                        .add(BigDecimal.valueOf(transferAmount)));
 
-        Allure.step("Verify exact destination balance effects", () -> {
+                        // Balance increases by transfer amount
+                        assertThat(destinationAfterTransfer.balance())
+                                        .isEqualByComparingTo(
+                                                        destinationBeforeTransfer.balance()
+                                                                        .add(BigDecimal.valueOf(transferAmount)));
 
-            // Debit remains unchanged
-            assertThat(destinationAfterTransfer.debitBalance())
-                    .isEqualByComparingTo(
-                            destinationBeforeTransfer.debitBalance());
+                        // 0 + 7,000 = 7,000
+                        assertThat(destinationAfterTransfer.balance())
+                                        .isEqualByComparingTo(BigDecimal.valueOf(7_000));
+                });
 
-            // Credit increases by transfer amount
-            assertThat(destinationAfterTransfer.creditBalance())
-                    .isEqualByComparingTo(
-                            destinationBeforeTransfer.creditBalance()
-                                    .add(BigDecimal.valueOf(transferAmount)));
+                Allure.step("Verify INV-001 holds for source balance", () -> {
+                        LedgerInvariantAssertions.assertDerivedBalanceInvariant(
+                                        sourceAfterTransfer);
+                });
 
-            // Balance increases by transfer amount
-            assertThat(destinationAfterTransfer.balance())
-                    .isEqualByComparingTo(
-                            destinationBeforeTransfer.balance()
-                                    .add(BigDecimal.valueOf(transferAmount)));
+                Allure.step("Verify INV-001 holds for destination balance", () -> {
+                        LedgerInvariantAssertions.assertDerivedBalanceInvariant(
+                                        destinationAfterTransfer);
+                });
+        }
 
-            // 0 + 7,000 = 7,000
-            assertThat(destinationAfterTransfer.balance())
-                    .isEqualByComparingTo(BigDecimal.valueOf(7_000));
-        });
+        @Test
+        @Tag("FUN-08")
+        @Story("FUN-08 - Overdraft limit boundary")
+        @DisplayName("should allow transfer at overdraft limit and reject one unit beyond it")
+        void shouldEnforceOverdraftLimitBoundary() {
+                long fundingAmount = 5_000;
+                long transferAmount = 7_000;
+                long overdraftLimit = 2_000;
+                String currency = "NGN";
+                int precision = 100;
 
-        Allure.step("Verify INV-001 holds for source balance", () -> {
-            LedgerInvariantAssertions.assertDerivedBalanceInvariant(
-                    sourceAfterTransfer);
-        });
+                // Given
+                CreateLedgerResponse ledger = createLedger(TestData.unique("fun-08-ledger"));
 
-        Allure.step("Verify INV-001 holds for destination balance", () -> {
-            LedgerInvariantAssertions.assertDerivedBalanceInvariant(
-                    destinationAfterTransfer);
-        });
-    }
+                CreateBalanceResponse worldBalance = createBalance(ledger.ledgerId(), currency);
+
+                CreateBalanceResponse sourceBalance = createBalance(ledger.ledgerId(), currency);
+
+                CreateBalanceResponse destinationBalance = createBalance(ledger.ledgerId(), currency);
+
+                fundBalanceFromWorld(
+                                worldBalance.balanceId(),
+                                sourceBalance.balanceId(),
+                                fundingAmount,
+                                currency, overdraftLimit,
+                                precision);
+
+                // Database snapshots before transfer
+                BalanceRecord sourceBeforeTransfer = fetchPersistedBalance(sourceBalance.balanceId());
+
+                BalanceRecord destinationBeforeTransfer = fetchPersistedBalance(destinationBalance.balanceId());
+
+                // Verify preconditions
+                Allure.step("Verify source and destination balances before transfer", () -> {
+
+                        assertThat(sourceBeforeTransfer.creditBalance())
+                                        .isEqualByComparingTo(BigDecimal.valueOf(fundingAmount));
+
+                        assertThat(sourceBeforeTransfer.debitBalance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
+
+                        assertThat(sourceBeforeTransfer.balance())
+                                        .isEqualByComparingTo(BigDecimal.valueOf(fundingAmount));
+
+                        // Destination starts empty
+                        assertThat(destinationBeforeTransfer.creditBalance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
+
+                        assertThat(destinationBeforeTransfer.debitBalance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
+
+                        assertThat(destinationBeforeTransfer.balance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
+
+                        // Ensure this really is an overdraft scenario
+                        assertThat(BigDecimal.valueOf(transferAmount))
+                                        .isGreaterThan(sourceBeforeTransfer.balance());
+                });
+
+                // When
+                CreateTransactionResponse transferResponse = makeTransfer(
+                                sourceBalance.balanceId(),
+                                destinationBalance.balanceId(),
+                                transferAmount,
+                                currency,
+                                precision,
+                                true, // allow overdraft
+                                overdraftLimit,
+                                true,
+                                false);
+
+                // Database snapshots after transfer
+                BalanceRecord sourceAfterTransfer = fetchPersistedBalance(sourceBalance.balanceId());
+
+                BalanceRecord destinationAfterTransfer = fetchPersistedBalance(destinationBalance.balanceId());
+
+                // Then
+                Allure.step("Verify overdraft transfer was applied", () -> {
+
+                        assertThat(transferResponse.status())
+                                        .isEqualTo("APPLIED");
+
+                        assertThat(transferResponse.allowOverdraft())
+                                        .isTrue();
+
+                        assertThat(transferResponse.overdraftLimit())
+                                        .isEqualTo(overdraftLimit);
+
+                        assertThat(transferResponse.preciseAmount())
+                                        .isEqualTo(transferAmount);
+                });
+
+                Allure.step("Verify exact source balance effects", () -> {
+
+                        assertThat(sourceAfterTransfer.creditBalance())
+                                        .isEqualByComparingTo(
+                                                        sourceBeforeTransfer.creditBalance());
+
+                        assertThat(sourceAfterTransfer.debitBalance())
+                                        .isEqualByComparingTo(
+                                                        sourceBeforeTransfer.debitBalance()
+                                                                        .add(BigDecimal.valueOf(transferAmount)));
+
+                        assertThat(sourceAfterTransfer.balance())
+                                        .isEqualByComparingTo(
+                                                        sourceBeforeTransfer.balance()
+                                                                        .subtract(BigDecimal.valueOf(transferAmount)));
+
+                        // 5,000 - 7,000 = -2,000
+                        assertThat(sourceAfterTransfer.balance())
+                                        .isEqualByComparingTo(BigDecimal.valueOf(-overdraftLimit));
+                });
+
+                Allure.step("Verify exact destination balance effects", () -> {
+
+                        // Debit remains unchanged
+                        assertThat(destinationAfterTransfer.debitBalance())
+                                        .isEqualByComparingTo(
+                                                        destinationBeforeTransfer.debitBalance());
+
+                        // Credit increases by transfer amount
+                        assertThat(destinationAfterTransfer.creditBalance())
+                                        .isEqualByComparingTo(
+                                                        destinationBeforeTransfer.creditBalance()
+                                                                        .add(BigDecimal.valueOf(transferAmount)));
+
+                        // Balance increases by transfer amount
+                        assertThat(destinationAfterTransfer.balance())
+                                        .isEqualByComparingTo(
+                                                        destinationBeforeTransfer.balance()
+                                                                        .add(BigDecimal.valueOf(transferAmount)));
+
+                        // 0 + 7,000 = 7,000
+                        assertThat(destinationAfterTransfer.balance())
+                                        .isEqualByComparingTo(BigDecimal.valueOf(7_000));
+                });
+
+                Allure.step("Verify INV-001 holds for source balance", () -> {
+                        LedgerInvariantAssertions.assertDerivedBalanceInvariant(
+                                        sourceAfterTransfer);
+                });
+
+                Allure.step("Verify INV-001 holds for destination balance", () -> {
+                        LedgerInvariantAssertions.assertDerivedBalanceInvariant(
+                                        destinationAfterTransfer);
+                });
+
+        }
+
+        @Test
+        @Tag("FUN-09")
+        @Story("FUN-09 - Overdraft limit boundary")
+        @DisplayName("should reject one unit beyond overdraft limit")
+        void shouldRejectOneUnitAboveOverdraftLimit() {
+                long fundingAmount = 5_000;
+                long transferAmount = 7_001;
+                long overdraftLimit = 20;
+                String currency = "NGN";
+                int precision = 100;
+
+                CreateLedgerResponse ledger = createLedger(TestData.unique("fun-09-ledger"));
+
+                CreateBalanceResponse worldBalance = createBalance(ledger.ledgerId(), currency);
+
+                CreateBalanceResponse sourceBalance = createBalance(ledger.ledgerId(), currency);
+
+                CreateBalanceResponse destinationBalance = createBalance(ledger.ledgerId(), currency);
+
+                fundBalanceFromWorld(
+                                worldBalance.balanceId(),
+                                sourceBalance.balanceId(),
+                                fundingAmount,
+                                currency, 0,
+                                precision);
+
+                // Database snapshots before transfer
+                BalanceRecord sourceBeforeTransfer = fetchPersistedBalance(sourceBalance.balanceId());
+
+                BalanceRecord destinationBeforeTransfer = fetchPersistedBalance(destinationBalance.balanceId());
+
+                // Verify preconditions
+                Allure.step("Verify source and destination balances before transfer", () -> {
+
+                        assertThat(sourceBeforeTransfer.creditBalance())
+                                        .isEqualByComparingTo(BigDecimal.valueOf(fundingAmount));
+
+                        assertThat(sourceBeforeTransfer.debitBalance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
+
+                        assertThat(sourceBeforeTransfer.balance())
+                                        .isEqualByComparingTo(BigDecimal.valueOf(fundingAmount));
+
+                        // Destination starts empty
+                        assertThat(destinationBeforeTransfer.creditBalance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
+
+                        assertThat(destinationBeforeTransfer.debitBalance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
+
+                        assertThat(destinationBeforeTransfer.balance())
+                                        .isEqualByComparingTo(BigDecimal.ZERO);
+
+                        // Ensure this really is an overdraft scenario
+                        assertThat(BigDecimal.valueOf(transferAmount))
+                                        .isGreaterThan(sourceBeforeTransfer.balance());
+                });
+
+                // When
+                Response transferAttemptResponse = makeTransferToFail(
+                                sourceBalance.balanceId(),
+                                destinationBalance.balanceId(),
+                                transferAmount,
+                                currency,
+                                precision,
+                                true, // allow overdraft
+                                overdraftLimit,
+                                true,
+                                false);
+
+                int statusCode = transferAttemptResponse.getStatusCode();
+                String messageCode = transferAttemptResponse.jsonPath()
+                                .getString("error_detail.code");
+
+                Allure.step("Verify that transaction failedn with statis code 400 and message code 'TXN_VALIDATION_ERROR'",
+                                () -> {
+                                        assertThat(statusCode).isEqualTo(400);
+                                        assertThat(messageCode).isEqualTo("TXN_VALIDATION_ERROR");
+                                });
+
+                // we Take SQl Query Db Snapshots after transfer attempt
+                BalanceRecord sourceAfterTransfer = fetchPersistedBalance(sourceBalance.balanceId());
+
+                BalanceRecord destinationAfterTransfer = fetchPersistedBalance(destinationBalance.balanceId());
+
+                // Then
+                Allure.step("Verify that INV-0O2 holds for source balance", () -> {
+                        LedgerInvariantAssertions.assertSettledBalanceUnchanged(sourceBeforeTransfer,
+                                        sourceAfterTransfer);
+                });
+
+                Allure.step("Verify that INV-0O2 holds for destination balance", () -> {
+                        LedgerInvariantAssertions.assertSettledBalanceUnchanged(destinationBeforeTransfer,
+                                        destinationAfterTransfer);
+                });
+
+                Allure.step("Verify that INV-0O1 holds for source balance after transfer attempt", () -> {
+                        LedgerInvariantAssertions.assertDerivedBalanceInvariant(sourceAfterTransfer);
+                });
+
+                Allure.step("Verify that INV-0O1 holds for destination balance after transfer attempt", () -> {
+                        LedgerInvariantAssertions.assertDerivedBalanceInvariant(destinationAfterTransfer);
+                });
+        }
+
+        
 }

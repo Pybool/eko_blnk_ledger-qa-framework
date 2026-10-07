@@ -59,6 +59,7 @@ class TransactionSmokeTests extends BaseTest {
         int precision = 100;
 
         long fundingAmount = 10_000;
+        long overdraftLimit = 0;
         long transferAmount = 5_000;
 
         CreateLedgerRequest ledgerRequest = CreateLedgerRequest.of(
@@ -124,6 +125,7 @@ class TransactionSmokeTests extends BaseTest {
                 currency,
                 precision,
                 true,
+                overdraftLimit,
                 true,
                 false);
 
@@ -143,6 +145,7 @@ class TransactionSmokeTests extends BaseTest {
                 currency,
                 precision,
                 false,
+                overdraftLimit,
                 true,
                 false);
 

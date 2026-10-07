@@ -2,6 +2,7 @@ package io.portfolio.ledgerqa.api.spec;
 
 import io.portfolio.ledgerqa.config.TestConfig;
 import io.restassured.builder.RequestSpecBuilder;
+import io.restassured.filter.log.LogDetail;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 
@@ -16,6 +17,7 @@ public final class RequestSpecFactory {
                 .setBaseUri(TestConfig.baseUrl())
                 .setContentType(ContentType.JSON)
                 .setAccept(ContentType.JSON)
+                .log(LogDetail.ALL)
                 .build();
     }
 }

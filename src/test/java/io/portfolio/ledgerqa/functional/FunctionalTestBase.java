@@ -2,20 +2,21 @@ package io.portfolio.ledgerqa.functional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.math.BigDecimal;
+import java.util.List;
 
 import io.portfolio.ledgerqa.api.ApiClientFactory;
 import io.portfolio.ledgerqa.base.BaseTest;
 import io.portfolio.ledgerqa.db.RepositoryFactory;
 import io.portfolio.ledgerqa.db.model.BalanceRecord;
 import io.portfolio.ledgerqa.db.model.TransactionRecord;
-import io.portfolio.ledgerqa.db.repository.TransactionRepository;
+import io.portfolio.ledgerqa.domain.TransactionSource;
 import io.portfolio.ledgerqa.model.requests.CreateBalanceRequest;
 import io.portfolio.ledgerqa.model.requests.CreateLedgerRequest;
+import io.portfolio.ledgerqa.model.requests.CreateMultiSourceTransactionRequest;
 import io.portfolio.ledgerqa.model.requests.CreateTransactionRequest;
-import io.portfolio.ledgerqa.model.requests.FetchTransactionRequest;
 import io.portfolio.ledgerqa.model.responses.CreateBalanceResponse;
 import io.portfolio.ledgerqa.model.responses.CreateLedgerResponse;
+import io.portfolio.ledgerqa.model.responses.CreateMultiSourceTransactionResponse;
 import io.portfolio.ledgerqa.model.responses.CreateTransactionResponse;
 import io.portfolio.ledgerqa.model.responses.FetchTransactionResponse;
 import io.portfolio.ledgerqa.testsupport.TestData;
@@ -94,6 +95,7 @@ public abstract class FunctionalTestBase extends BaseTest {
                         String destinationBalanceId,
                         long amount,
                         String currency,
+                        long overdraftLimit,
                         int precision) {
                 String reference = TestData.unique("world-fund-ref");
 
@@ -106,6 +108,7 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 currency,
                                 precision,
                                 true,
+                                overdraftLimit,
                                 true,
                                 false);
 
@@ -132,6 +135,7 @@ public abstract class FunctionalTestBase extends BaseTest {
                         String currency,
                         int precision,
                         Boolean allowOverdraft,
+                        long overdraftLimit,
                         Boolean skipQueue,
                         Boolean inflight) {
                 String reference = TestData.unique("make-transfer-ref");
@@ -145,6 +149,7 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 currency,
                                 precision,
                                 allowOverdraft,
+                                overdraftLimit,
                                 skipQueue,
                                 inflight);
 
@@ -164,6 +169,43 @@ public abstract class FunctionalTestBase extends BaseTest {
                 return response.as(CreateTransactionResponse.class);
         }
 
+        protected CreateMultiSourceTransactionResponse makeMultiSourceTransfer(
+                        List<TransactionSource> sources,
+                        String destinationBalanceId,
+                        long amount,
+                        String currency,
+                        int precision,
+                        boolean atomic, boolean skipQueue) {
+
+                String reference = TestData.unique("multi-source-transfer-ref");
+
+                CreateMultiSourceTransactionRequest request = new CreateMultiSourceTransactionRequest(
+                                amount,
+                                precision,
+                                reference,
+                                currency,
+                                sources,
+                                destinationBalanceId,
+                                "Transfer from multiple sources to destination",
+                                atomic, skipQueue);
+
+                Response response = Allure.step(
+                                "Transfer %d %s precise units from multiple sources"
+                                                .formatted(amount, currency),
+                                () -> ApiClientFactory.transactionClient()
+                                                .createMultiSourceTransaction(request));
+
+                attachJson(
+                                "Multi-Source Transaction Response",
+                                response);
+
+                assertThat(response.statusCode())
+                                .as("Multi-source transaction should succeed")
+                                .isBetween(200, 299);
+
+                return response.as(CreateMultiSourceTransactionResponse.class);
+        }
+
         protected Response makeTransferToFail(
                         String sourceBalanceId,
                         String destinationBalanceId,
@@ -171,6 +213,7 @@ public abstract class FunctionalTestBase extends BaseTest {
                         String currency,
                         int precision,
                         boolean allowOverdraft,
+                        long overdraftLimit,
                         boolean skipQueue,
                         boolean inflight) {
 
@@ -185,6 +228,7 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 currency,
                                 precision,
                                 allowOverdraft,
+                                overdraftLimit,
                                 skipQueue,
                                 inflight);
 
@@ -209,6 +253,43 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 .findById(balanceId)
                                 .orElseThrow(() -> new AssertionError(
                                                 "Balance was not persisted in database: " + balanceId));
+        }
+
+        protected Response makeMultiSourceTransferToFail(
+                        List<TransactionSource> sources,
+                        String destinationBalanceId,
+                        long amount,
+                        String currency,
+                        int precision,
+                        boolean atomic, boolean skipQueue) {
+
+                String reference = TestData.unique("multi-source-transfer-ref");
+
+                CreateMultiSourceTransactionRequest request = new CreateMultiSourceTransactionRequest(
+                                amount,
+                                precision,
+                                reference,
+                                currency,
+                                sources,
+                                destinationBalanceId,
+                                "Transfer from multiple sources to destination",
+                                atomic, skipQueue);
+
+                Response response = Allure.step(
+                                "Transfer %d %s precise units from multiple sources"
+                                                .formatted(amount, currency),
+                                () -> ApiClientFactory.transactionClient()
+                                                .createMultiSourceTransaction(request));
+
+                attachJson(
+                                "Multi-Source Transaction Response",
+                                response);
+
+                assertThat(response.statusCode())
+                                .as("Multi-source transaction should fail")
+                                .isBetween(400, 499);
+
+                return response;
         }
 
         protected TransactionRecord fetchPersistedTransaction(
@@ -264,6 +345,7 @@ public abstract class FunctionalTestBase extends BaseTest {
         protected FundedBalanceFixture createFundedBalance(
                         long amount,
                         String currency,
+                        long overdraftLimit,
                         int precision) {
                 CreateLedgerResponse ledger = createLedger(TestData.unique("funded-balance"));
 
@@ -276,6 +358,7 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 balance.balanceId(),
                                 amount,
                                 currency,
+                                overdraftLimit,
                                 precision);
 
                 return new FundedBalanceFixture(
