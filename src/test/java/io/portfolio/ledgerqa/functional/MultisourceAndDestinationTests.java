@@ -1,7 +1,6 @@
 package io.portfolio.ledgerqa.functional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,7 +27,6 @@ import io.portfolio.ledgerqa.model.responses.CreateBalanceResponse;
 import io.portfolio.ledgerqa.model.responses.CreateLedgerResponse;
 import io.portfolio.ledgerqa.model.responses.CreateMultiDestinationTransactionResponse;
 import io.portfolio.ledgerqa.model.responses.CreateMultiSourceTransactionResponse;
-import io.portfolio.ledgerqa.model.responses.FetchTransactionResponse;
 import io.portfolio.ledgerqa.assertions.LedgerInvariantAssertions;
 
 import io.portfolio.ledgerqa.testsupport.TestData;
