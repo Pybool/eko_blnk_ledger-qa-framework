@@ -3,6 +3,7 @@ package io.portfolio.ledgerqa.db.repository;
 import io.portfolio.ledgerqa.db.DatabaseClient;
 import io.portfolio.ledgerqa.db.model.TransactionRecord;
 
+import java.util.List;
 import java.util.Optional;
 
 public final class TransactionRepository {
@@ -19,6 +20,20 @@ public final class TransactionRepository {
                 status
             FROM blnk.transactions
             WHERE transaction_id = ?
+            """;
+
+    private static final String FIND_BY_PARENT_ID = """
+            SELECT
+                transaction_id,
+                reference,
+                source,
+                destination,
+                amount,
+                precise_amount,
+                currency,
+                status
+            FROM blnk.transactions
+            WHERE parent_transaction = ?
             """;
 
     private static final String FIND_BY_REFERENCE = """
@@ -51,6 +66,15 @@ public final class TransactionRepository {
                 FIND_BY_ID,
                 this::mapTransaction,
                 transactionId);
+    }
+
+    public List<TransactionRecord> findByParentTransaction(
+            String parentTransactionId) {
+
+        return database.queryMany(
+                FIND_BY_PARENT_ID,
+                this::mapTransaction,
+                parentTransactionId);
     }
 
     public Optional<TransactionRecord> findByReference(

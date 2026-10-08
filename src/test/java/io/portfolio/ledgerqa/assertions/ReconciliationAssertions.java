@@ -1,5 +1,13 @@
 package io.portfolio.ledgerqa.assertions;
 
-public class ReconciliationAssertions {
-    
+import io.portfolio.ledgerqa.db.model.BalanceRecord;
+
+public final class ReconciliationAssertions {
+    private ReconciliationAssertions() {
+    }
+
+    public static void assertRefundTransactionWasCreated(BalanceRecord balance) {
+
+        
+    }
 }

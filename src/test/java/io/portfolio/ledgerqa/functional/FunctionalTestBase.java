@@ -9,15 +9,20 @@ import io.portfolio.ledgerqa.base.BaseTest;
 import io.portfolio.ledgerqa.db.RepositoryFactory;
 import io.portfolio.ledgerqa.db.model.BalanceRecord;
 import io.portfolio.ledgerqa.db.model.TransactionRecord;
+import io.portfolio.ledgerqa.domain.TransactionDestination;
 import io.portfolio.ledgerqa.domain.TransactionSource;
 import io.portfolio.ledgerqa.model.requests.CreateBalanceRequest;
 import io.portfolio.ledgerqa.model.requests.CreateLedgerRequest;
 import io.portfolio.ledgerqa.model.requests.CreateMultiSourceTransactionRequest;
+import io.portfolio.ledgerqa.model.requests.CreateMultiDestinationTransactionRequest;
 import io.portfolio.ledgerqa.model.requests.CreateTransactionRequest;
+import io.portfolio.ledgerqa.model.requests.TransactionAttempt;
 import io.portfolio.ledgerqa.model.responses.CreateBalanceResponse;
 import io.portfolio.ledgerqa.model.responses.CreateLedgerResponse;
 import io.portfolio.ledgerqa.model.responses.CreateMultiSourceTransactionResponse;
+import io.portfolio.ledgerqa.model.responses.CreateMultiDestinationTransactionResponse;
 import io.portfolio.ledgerqa.model.responses.CreateTransactionResponse;
+
 import io.portfolio.ledgerqa.model.responses.FetchTransactionResponse;
 import io.portfolio.ledgerqa.testsupport.TestData;
 import io.qameta.allure.Allure;
@@ -206,6 +211,43 @@ public abstract class FunctionalTestBase extends BaseTest {
                 return response.as(CreateMultiSourceTransactionResponse.class);
         }
 
+        protected CreateMultiDestinationTransactionResponse makeMultiDestinationTransfer(
+                        List<TransactionDestination> destinations,
+                        String sourceBalanceId,
+                        long amount,
+                        String currency,
+                        int precision,
+                        boolean atomic, boolean skipQueue) {
+
+                String reference = TestData.unique("multi-destination-transfer-ref");
+
+                CreateMultiDestinationTransactionRequest request = new CreateMultiDestinationTransactionRequest(
+                                amount,
+                                precision,
+                                reference,
+                                currency,
+                                destinations,
+                                sourceBalanceId,
+                                "Transfer from one source to multiple destinations",
+                                atomic, skipQueue);
+
+                Response response = Allure.step(
+                                "Transfer %d %s precise units from single source to multiple destinations"
+                                                .formatted(amount, currency),
+                                () -> ApiClientFactory.transactionClient()
+                                                .createMultiDestinationTransaction(request));
+
+                attachJson(
+                                "Multi-Destination Transaction Response",
+                                response);
+
+                assertThat(response.statusCode())
+                                .as("Multi-destination transaction should succeed")
+                                .isBetween(200, 299);
+
+                return response.as(CreateMultiDestinationTransactionResponse.class);
+        }
+
         protected Response makeTransferToFail(
                         String sourceBalanceId,
                         String destinationBalanceId,
@@ -255,13 +297,15 @@ public abstract class FunctionalTestBase extends BaseTest {
                                                 "Balance was not persisted in database: " + balanceId));
         }
 
-        protected Response makeMultiSourceTransferToFail(
+
+        protected TransactionAttempt makeMultiSourceTransferToFail(
                         List<TransactionSource> sources,
                         String destinationBalanceId,
                         long amount,
                         String currency,
                         int precision,
-                        boolean atomic, boolean skipQueue) {
+                        boolean atomic,
+                        boolean skipQueue) {
 
                 String reference = TestData.unique("multi-source-transfer-ref");
 
@@ -273,7 +317,8 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 sources,
                                 destinationBalanceId,
                                 "Transfer from multiple sources to destination",
-                                atomic, skipQueue);
+                                atomic,
+                                skipQueue);
 
                 Response response = Allure.step(
                                 "Transfer %d %s precise units from multiple sources"
@@ -281,15 +326,13 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 () -> ApiClientFactory.transactionClient()
                                                 .createMultiSourceTransaction(request));
 
-                attachJson(
-                                "Multi-Source Transaction Response",
-                                response);
+                attachJson("Multi-Source Transaction Response", response);
 
                 assertThat(response.statusCode())
                                 .as("Multi-source transaction should fail")
                                 .isBetween(400, 499);
 
-                return response;
+                return new TransactionAttempt(reference, response);
         }
 
         protected TransactionRecord fetchPersistedTransaction(
@@ -298,6 +341,25 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 .findById(transactionId)
                                 .orElseThrow(() -> new AssertionError(
                                                 "Transaction was not persisted in database: " + transactionId));
+        }
+
+        protected List<TransactionRecord> fetchPersistedTransactionsByParent(
+                        String parentTransactionId) {
+                return RepositoryFactory.transactionRepository()
+                                .findByParentTransaction(parentTransactionId);
+        }
+
+        protected TransactionRecord fetchPersistedTransactionRefund(
+                        String reference, String appendix) {
+                System.out.printf(
+                                "%n===== REFRENCE =====%n" +
+                                                "%s%n" +
+                                                "=================================================%n",
+                                reference + appendix);
+                return RepositoryFactory.transactionRepository()
+                                .findByReference(reference + appendix)
+                                .orElseThrow(() -> new AssertionError(
+                                                "Refund Transaction was not persisted in database: " + reference + appendix));
         }
 
         protected FetchTransactionResponse fetchTransactionViaApi(
