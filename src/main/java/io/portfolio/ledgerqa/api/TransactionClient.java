@@ -1,6 +1,7 @@
 package io.portfolio.ledgerqa.api;
 
 import io.portfolio.ledgerqa.model.requests.CreateTransactionRequest;
+import io.portfolio.ledgerqa.model.requests.MutateTransactionRequest;
 import io.portfolio.ledgerqa.model.requests.CreateMultiDestinationTransactionRequest;
 import io.portfolio.ledgerqa.model.requests.CreateMultiSourceTransactionRequest;
 import io.portfolio.ledgerqa.model.requests.UpdateInflightRequest;
@@ -31,7 +32,7 @@ public final class TransactionClient extends BaseClient {
         return get(TRANSACTIONS + "/" + transactionId);
     }
 
-    public Response updateInflight(String transactionId, UpdateInflightRequest request) {
+    public Response updateInflight(String transactionId, MutateTransactionRequest request) {
         return put(TRANSACTIONS + "/inflight/" + transactionId, request);
     }
 }

@@ -726,23 +726,6 @@ class MultisourceAndDestinationTests extends FunctionalTestBase {
                         LedgerInvariantAssertions.assertDerivedBalanceInvariant(destination2AfterTransfer);
                         LedgerInvariantAssertions.assertDerivedBalanceInvariant(destination3AfterTransfer);
                 });
-
-                System.out.printf("""
-                                ===== FUN-11B ROUNDING RESULTS =====
-                                Source debit:        %s
-                                Destination 1 (33%%): %s
-                                Destination 2 (33%%): %s
-                                Destination 3 (34%%): %s
-                                Total credits:       %s
-                                Expected total:      %d
-                                ====================================
-                                %n""",
-                                sourceDebit,
-                                destination1Credit,
-                                destination2Credit,
-                                destination3Credit,
-                                totalDestinationCredits,
-                                transferAmount);
         }
 
         private List<TransactionSource> buildSources(

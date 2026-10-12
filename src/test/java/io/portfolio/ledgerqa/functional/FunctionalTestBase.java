@@ -1,8 +1,12 @@
 package io.portfolio.ledgerqa.functional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertThat;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.portfolio.ledgerqa.api.ApiClientFactory;
 import io.portfolio.ledgerqa.base.BaseTest;
@@ -16,6 +20,7 @@ import io.portfolio.ledgerqa.model.requests.CreateLedgerRequest;
 import io.portfolio.ledgerqa.model.requests.CreateMultiSourceTransactionRequest;
 import io.portfolio.ledgerqa.model.requests.CreateMultiDestinationTransactionRequest;
 import io.portfolio.ledgerqa.model.requests.CreateTransactionRequest;
+import io.portfolio.ledgerqa.model.requests.MutateTransactionRequest;
 import io.portfolio.ledgerqa.model.requests.TransactionAttempt;
 import io.portfolio.ledgerqa.model.responses.CreateBalanceResponse;
 import io.portfolio.ledgerqa.model.responses.CreateLedgerResponse;
@@ -289,6 +294,31 @@ public abstract class FunctionalTestBase extends BaseTest {
                 return response;
         }
 
+        protected Response mutateTransactionStatus(
+                        String transactionId,
+                        String transactionStateMutation,
+                        boolean skipQueue) {
+
+                MutateTransactionRequest request = new MutateTransactionRequest(
+                                transactionId,
+                                transactionStateMutation,
+                                skipQueue);
+
+                Response response = Allure.step(
+                                "Mutate transaction status of %s %s expected to pass"
+                                                .formatted(transactionId, transactionStateMutation),
+                                () -> ApiClientFactory.transactionClient()
+                                                .updateInflight(transactionId, request));
+
+                attachJson("Transaction status Response", response);
+
+                assertThat(response.statusCode())
+                                .as("Transaction status should be accepted")
+                                .isBetween(200, 299);
+
+                return response;
+        }
+
         protected BalanceRecord fetchPersistedBalance(
                         String balanceId) {
                 return RepositoryFactory.balanceRepository()
@@ -296,7 +326,6 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 .orElseThrow(() -> new AssertionError(
                                                 "Balance was not persisted in database: " + balanceId));
         }
-
 
         protected TransactionAttempt makeMultiSourceTransferToFail(
                         List<TransactionSource> sources,
@@ -359,7 +388,8 @@ public abstract class FunctionalTestBase extends BaseTest {
                 return RepositoryFactory.transactionRepository()
                                 .findByReference(reference + appendix)
                                 .orElseThrow(() -> new AssertionError(
-                                                "Refund Transaction was not persisted in database: " + reference + appendix));
+                                                "Refund Transaction was not persisted in database: " + reference
+                                                                + appendix));
         }
 
         protected FetchTransactionResponse fetchTransactionViaApi(
@@ -395,6 +425,23 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 name,
                                 "application/json",
                                 body);
+        }
+
+        protected void awaitTransactionStatus(String transactionId, String expectedStatus) {
+                AtomicReference<TransactionRecord> reference = new AtomicReference<>();
+
+                await().atMost(Duration.ofSeconds(30))
+                .pollInterval(Duration.ofMillis(500))
+                .untilAsserted(() -> {
+
+                        TransactionRecord transaction = fetchPersistedTransaction(
+                                        transactionId);
+
+                        assertThat(transaction.status())
+                                        .isEqualTo(expectedStatus);
+
+                        reference.set(transaction);
+                });
         }
 
         protected record FundedBalanceFixture(
