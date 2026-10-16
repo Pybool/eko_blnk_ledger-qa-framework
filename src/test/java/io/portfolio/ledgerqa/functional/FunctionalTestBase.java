@@ -299,10 +299,24 @@ public abstract class FunctionalTestBase extends BaseTest {
                         String transactionStateMutation,
                         boolean skipQueue) {
 
+                return mutateTransactionStatus(
+                                transactionId,
+                                transactionStateMutation,
+                                skipQueue,
+                                null);
+        }
+
+        protected Response mutateTransactionStatus(
+                        String transactionId,
+                        String transactionStateMutation,
+                        boolean skipQueue,
+                        Long preciseAmount) {
+
                 MutateTransactionRequest request = new MutateTransactionRequest(
                                 transactionId,
                                 transactionStateMutation,
-                                skipQueue);
+                                skipQueue,
+                                preciseAmount);
 
                 Response response = Allure.step(
                                 "Mutate transaction status of %s %s expected to pass"
@@ -431,17 +445,17 @@ public abstract class FunctionalTestBase extends BaseTest {
                 AtomicReference<TransactionRecord> reference = new AtomicReference<>();
 
                 await().atMost(Duration.ofSeconds(30))
-                .pollInterval(Duration.ofMillis(500))
-                .untilAsserted(() -> {
+                                .pollInterval(Duration.ofMillis(500))
+                                .untilAsserted(() -> {
 
-                        TransactionRecord transaction = fetchPersistedTransaction(
-                                        transactionId);
+                                        TransactionRecord transaction = fetchPersistedTransaction(
+                                                        transactionId);
 
-                        assertThat(transaction.status())
-                                        .isEqualTo(expectedStatus);
+                                        assertThat(transaction.status())
+                                                        .isEqualTo(expectedStatus);
 
-                        reference.set(transaction);
-                });
+                                        reference.set(transaction);
+                                });
         }
 
         protected record FundedBalanceFixture(

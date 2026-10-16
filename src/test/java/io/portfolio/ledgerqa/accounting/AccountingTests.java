@@ -19,11 +19,15 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
+import io.qameta.allure.Feature;
 import io.qameta.allure.Epic;
 import io.qameta.allure.Story;
 import io.restassured.response.Response;
 
-public class AccountingTests extends FunctionalTestBase {
+@Epic("Ledger Quality Platform")
+@Feature("Accounts & Balances")
+@Tag("accounting")
+class AccountingTests extends FunctionalTestBase {
         @Test
         @Tag("accounting")
         @Tag("ACC-01")
