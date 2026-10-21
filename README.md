@@ -243,6 +243,6 @@ Allure captures named steps and API/transaction evidence. Consult `pom.xml` and 
 
 ## Project purpose
 
-This is a portfolio-grade SDET exercise in **financial systems quality engineering**: testing whether financial state remains correct under normal operations, edge cases, retries, concurrency, and failure—not merely whether endpoints return successful responses.
+This is my portfolio exercise in **financial systems quality engineering**: testing whether financial state remains correct under normal operations, edge cases, retries, concurrency, and failure—not merely whether endpoints return successful responses.
 
 **Repository:** [Pybool/eko_blnk_ledger-qa-framework](https://github.com/Pybool/eko_blnk_ledger-qa-framework)
