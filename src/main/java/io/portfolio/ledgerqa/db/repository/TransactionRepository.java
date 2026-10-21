@@ -11,6 +11,7 @@ public final class TransactionRepository {
     private static final String FIND_BY_ID = """
             SELECT
                 transaction_id,
+                parent_transaction,
                 reference,
                 source,
                 destination,
@@ -25,6 +26,7 @@ public final class TransactionRepository {
     private static final String FIND_BY_PARENT_ID = """
             SELECT
                 transaction_id,
+                parent_transaction,
                 reference,
                 source,
                 destination,
@@ -39,6 +41,7 @@ public final class TransactionRepository {
     private static final String FIND_BY_REFERENCE = """
             SELECT
                 transaction_id,
+                parent_transaction,
                 reference,
                 source,
                 destination,
@@ -91,6 +94,7 @@ public final class TransactionRepository {
 
         return new TransactionRecord(
                 resultSet.getString("transaction_id"),
+                resultSet.getString("parent_transaction"),
                 resultSet.getString("reference"),
                 resultSet.getString("source"),
                 resultSet.getString("destination"),

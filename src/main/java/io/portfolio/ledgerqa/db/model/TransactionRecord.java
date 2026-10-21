@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public record TransactionRecord(
         String transactionId,
+        String parentTransaction,
         String reference,
         String source,
         String destination,

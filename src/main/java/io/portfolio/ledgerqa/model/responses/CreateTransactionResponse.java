@@ -55,7 +55,9 @@ public record CreateTransactionResponse(
 ) {
         public record MetaData(
 
-                 @JsonProperty("allow_overdraft") boolean allowOverdraft
+                        @JsonProperty("allow_overdraft") boolean allowOverdraft,
+
+                        @JsonProperty("QUEUED_PARENT_TRANSACTION") String queuedParentTransaction
 
         ) {
         }

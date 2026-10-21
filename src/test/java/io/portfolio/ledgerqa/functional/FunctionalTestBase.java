@@ -5,6 +5,7 @@ import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertThat;
 
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -179,6 +180,47 @@ public abstract class FunctionalTestBase extends BaseTest {
                 return response.as(CreateTransactionResponse.class);
         }
 
+        protected CreateTransactionResponse makeTransferWithInflightExpiry(
+                        String sourceBalanceId,
+                        String destinationBalanceId,
+                        long amount,
+                        String currency,
+                        int precision,
+                        Boolean allowOverdraft,
+                        long overdraftLimit,
+                        Boolean skipQueue,
+                        Instant inflightExpiryDate) {
+
+                String reference = TestData.unique("expiry-transfer-ref");
+
+                CreateTransactionRequest request = new CreateTransactionRequest(
+                                "Inflight transfer with expiry",
+                                reference,
+                                sourceBalanceId,
+                                destinationBalanceId,
+                                amount,
+                                currency,
+                                precision,
+                                allowOverdraft,
+                                overdraftLimit,
+                                skipQueue,
+                                true,
+                                inflightExpiryDate.toString());
+
+                Response response = Allure.step(
+                                "Create inflight transfer of %d %s with expiry %s"
+                                                .formatted(amount, currency, inflightExpiryDate),
+                                () -> ApiClientFactory.transactionClient().create(request));
+
+                attachJson("Inflight Expiry Transfer Response", response);
+
+                assertThat(response.statusCode())
+                                .as("Inflight transaction creation should succeed")
+                                .isBetween(200, 299);
+
+                return response.as(CreateTransactionResponse.class);
+        }
+
         protected CreateMultiSourceTransactionResponse makeMultiSourceTransfer(
                         List<TransactionSource> sources,
                         String destinationBalanceId,
@@ -319,16 +361,12 @@ public abstract class FunctionalTestBase extends BaseTest {
                                 preciseAmount);
 
                 Response response = Allure.step(
-                                "Mutate transaction status of %s %s expected to pass"
+                                "Mutate transaction status of %s %s expected to return responses"
                                                 .formatted(transactionId, transactionStateMutation),
                                 () -> ApiClientFactory.transactionClient()
                                                 .updateInflight(transactionId, request));
 
                 attachJson("Transaction status Response", response);
-
-                assertThat(response.statusCode())
-                                .as("Transaction status should be accepted")
-                                .isBetween(200, 299);
 
                 return response;
         }

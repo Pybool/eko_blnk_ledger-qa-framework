@@ -417,15 +417,6 @@ class MultisourceAndDestinationTests extends FunctionalTestBase {
 
                 String reference = transactionAttempt.reference();
 
-                // Characterize the actual failure response
-                System.out.printf(
-                                "%n===== FUN-10C ATOMIC SPLIT FAILURE RESPONSE =====%n" +
-                                                "HTTP Status: %d%n" +
-                                                "%s%n" +
-                                                "=================================================%n",
-                                transactionAttempt.response().statusCode(),
-                                transactionAttempt.response().getBody().asPrettyString());
-
                 TransactionRecord originalTransaction = fetchPersistedTransactionRefund(reference, "-1");
                 TransactionRecord queuedRefundTransaction = fetchPersistedTransactionRefund(
                                 originalTransaction.transactionId(), "_refund");

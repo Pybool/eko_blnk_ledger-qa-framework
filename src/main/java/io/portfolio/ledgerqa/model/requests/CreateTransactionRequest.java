@@ -1,27 +1,60 @@
 package io.portfolio.ledgerqa.model.requests;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record CreateTransactionRequest(
-    String description,
-    
-    String reference,
+        String description,
 
-    String source,
+        String reference,
 
-    String destination,
+        String source,
 
-    @JsonProperty("precise_amount") long preciseAmount,
+        String destination,
 
-    String currency,
+        @JsonProperty("precise_amount") long preciseAmount,
 
-    int precision,
+        String currency,
 
-    @JsonProperty("allow_overdraft") boolean allowOverdraft,
+        int precision,
 
-    @JsonProperty("overdraft_limit") long overdraftLimit,
+        @JsonProperty("allow_overdraft") boolean allowOverdraft,
 
-    @JsonProperty("skip_queue") boolean skipQueue,
+        @JsonProperty("overdraft_limit") long overdraftLimit,
 
-    boolean inflight) {
+        @JsonProperty("skip_queue") boolean skipQueue,
+
+        boolean inflight,
+
+        @JsonProperty("inflight_expiry_date") String inflightExpiryDate) {
+
+    public CreateTransactionRequest(
+            String description,
+            String reference,
+            String source,
+            String destination,
+            long preciseAmount,
+            String currency,
+            int precision,
+            boolean allowOverdraft,
+            long overdraftLimit,
+            boolean skipQueue,
+            boolean inflight) {
+
+        this(
+                description,
+                reference,
+                source,
+                destination,
+                preciseAmount,
+                currency,
+                precision,
+                allowOverdraft,
+                overdraftLimit,
+                skipQueue,
+                inflight,
+                null
+        );
+    }
 }
