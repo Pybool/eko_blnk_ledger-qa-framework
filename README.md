@@ -221,7 +221,7 @@ Allure is used for structured test steps and API/transaction evidence. Report ge
 - [x] Define 11 financial ledger invariants
 - [x] Develop core functional transfer and rejection scenarios
 - [x] Develop inflight commit/void accounting scenarios and reusable assertions
-- [ ] Complete and stabilize ACC-06/ACC-07 and lifecycle partial-commit coverage
+- [x] Complete and stabilize ACC-06/ACC-07 and lifecycle partial-commit coverage
 - [ ] Expand idempotency, state machine, and concurrency tests
 - [ ] Implement independent transaction-log reconciliation
 - [ ] Add fault injection and recovery verification
